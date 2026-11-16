@@ -5,7 +5,6 @@ export class KillRing {
   private index = 0;
   constructor(private readonly capacity = 60) {}
   public add(value: string, direction: Direction, append: boolean): void {
-    if (!value) return;
     if (append && this.entries.length) {
       this.entries[0] = direction === 'forward' ? this.entries[0] + value : value + this.entries[0];
     } else {
@@ -66,12 +65,12 @@ export class EditorState {
   public moveCharacter(count: number): void {
     let position = this.point;
     for (let index = 0; index < Math.abs(count); index++) {
-      if (count > 0 && position < this.text.length) { const code = this.text.codePointAt(position); position += code !== undefined && code > 0xffff ? 2 : 1; }
-      else if (count < 0 && position > 0) { position--; if (position > 0 && this.text.charCodeAt(position) >= 0xdc00 && this.text.charCodeAt(position) <= 0xdfff && this.text.charCodeAt(position - 1) >= 0xd800 && this.text.charCodeAt(position - 1) <= 0xdbff) position--; }
+      if (count > 0 && position < this.text.length) { const code = this.text.codePointAt(position); position += this.text.startsWith('\r\n', position) || (code !== undefined && code > 0xffff) ? 2 : 1; }
+      else if (count < 0 && position > 0) { position--; if (position > 0 && ((this.text[position] === '\n' && this.text[position - 1] === '\r') || (this.text.charCodeAt(position) >= 0xdc00 && this.text.charCodeAt(position) <= 0xdfff && this.text.charCodeAt(position - 1) >= 0xd800 && this.text.charCodeAt(position - 1) <= 0xdbff))) position--; }
     }
     this.point = position; this.done('move');
   }
-  public lineBoundary(end: boolean): void { const before = this.point === 0 ? -1 : this.text.lastIndexOf('\n', this.point - 1); const after = this.text.indexOf('\n', this.point); this.point = end ? (after < 0 ? this.text.length : after) : before + 1; this.done('move'); }
+  public lineBoundary(end: boolean): void { const before = this.point === 0 ? -1 : this.text.lastIndexOf('\n', this.point - 1); const after = this.text.indexOf('\n', this.point); this.point = end ? (after < 0 ? this.text.length : after > 0 && this.text[after - 1] === '\r' ? after - 1 : after) : before + 1; this.done('move'); }
   public backToIndentation(): void {
     let position = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
     while (position < this.text.length && /[ \t\f\v]/.test(this.text[position])) position++;
@@ -87,7 +86,8 @@ export class EditorState {
       else { if (lineStart === 0) { this.point = 0; this.goalColumn = goal; this.done('vertical'); return; } lineStart = this.text.lastIndexOf('\n', lineStart - 2) + 1; }
     }
     const end = this.text.indexOf('\n', lineStart);
-    this.point = Math.min(lineStart + goal, end < 0 ? this.text.length : end); this.goalColumn = goal; this.done('vertical');
+    const lineEnd = end < 0 ? this.text.length : end > lineStart && this.text[end - 1] === '\r' ? end - 1 : end;
+    this.point = Math.min(lineStart + goal, lineEnd); this.goalColumn = goal; this.done('vertical');
   }
   private isWord(char: string): boolean { return /[\p{L}\p{N}]/u.test(char); }
   public wordPosition(count: number, origin = this.point): number {
@@ -188,8 +188,8 @@ export class EditorState {
     }
     return this.kill(this.point, position, count < 0 ? 'backward' : 'forward');
   }
-  public yank(): void { const value = this.ring.current(); if (value === undefined) throw new Error('Kill ring is empty'); const start = this.point; this.replace(start, start, value); this.mark = start; this.yankRange = [start, this.point]; this.done('yank'); }
-  public yankPop(count = 1): void { if (!this.yankRange || (this.previous !== 'yank' && this.previous !== 'yank-pop')) throw new Error('Previous command was not a yank'); const value = this.ring.rotate(count); if (value === undefined) throw new Error('Kill ring is empty'); const [start, end] = this.yankRange; this.replace(start, end, value); this.mark = start; this.yankRange = [start, this.point]; this.done('yank-pop'); }
+  public yank(lineEnding?: string): void { const value = this.ring.current(); if (value === undefined) throw new Error('Kill ring is empty'); const start = this.point; this.replace(start, start, lineEnding === undefined ? value : value.replace(/\r\n|\n/g, lineEnding)); this.mark = start; this.yankRange = [start, this.point]; this.done('yank'); }
+  public yankPop(count = 1, lineEnding?: string): void { if (!this.yankRange || (this.previous !== 'yank' && this.previous !== 'yank-pop')) throw new Error('Previous command was not a yank'); const value = this.ring.rotate(count); if (value === undefined) throw new Error('Kill ring is empty'); const [start, end] = this.yankRange; this.replace(start, end, lineEnding === undefined ? value : value.replace(/\r\n|\n/g, lineEnding)); this.mark = start; this.yankRange = [start, this.point]; this.done('yank-pop'); }
   public deleteCharacter(count: number): void { const origin = this.point; this.moveCharacter(count); const end = this.point; this.replace(Math.min(origin, end), Math.max(origin, end), ''); this.done('delete'); }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point; let end = this.point;

@@ -4,7 +4,7 @@ import { SearchController } from './search';
 import { Registers } from './core/registers';
 import { editRectangle, RectangleAction, yankRectangle } from './core/rectangles';
 
-type Action = (state: EditorState, count: number, hasPrefix: boolean) => void;
+type Action = (state: EditorState, count: number, hasPrefix: boolean, lineEnding: string) => void;
 
 export function activate(context: vscode.ExtensionContext): void {
   const ring = new KillRing(vscode.workspace.getConfiguration('emacscode').get<number>('killRingSize', 60));
@@ -37,8 +37,11 @@ export function activate(context: vscode.ExtensionContext): void {
       while (start < before.length && start < state.text.length && before[start] === state.text[start]) start++;
       let oldEnd = before.length; let newEnd = state.text.length;
       while (oldEnd > start && newEnd > start && before[oldEnd - 1] === state.text[newEnd - 1]) { oldEnd--; newEnd--; }
+      const splitsCRLF = (text: string, offset: number): boolean => offset > 0 && text[offset - 1] === '\r' && text[offset] === '\n';
+      if (splitsCRLF(before, start) || splitsCRLF(state.text, start)) start--;
+      if (splitsCRLF(before, oldEnd) || splitsCRLF(state.text, newEnd)) { oldEnd++; newEnd++; }
       const ok = await editor.edit(builder => builder.replace(new vscode.Range(editor.document.positionAt(start), editor.document.positionAt(oldEnd)), state.text.slice(start, newEnd)));
-      if (!ok) { states.delete(editor); throw new Error('The editor rejected the edit'); }
+      if (!ok || editor.document.getText() !== state.text) { states.delete(editor); throw new Error('The editor rejected the edit'); }
     }
     afterEdit();
     const point = editor.document.positionAt(state.point);
@@ -70,7 +73,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (editor.selections.length !== 1) throw new Error('emacscode supports one cursor at a time');
         const state = stateFor(editor); const before = state.text; const oldRing = ring.values(); let editCommitted = false;
         try {
-          action(state, count, hasPrefix);
+          action(state, count, hasPrefix, editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n');
           if (state.text !== before && editor.document.isClosed) throw new Error('The document is closed');
           await apply(editor, state, before, () => { editCommitted = true; });
           const newest = ring.values()[0];
@@ -106,13 +109,13 @@ export function activate(context: vscode.ExtensionContext): void {
     killLine: (state, count, hasPrefix) => { state.killLine(count, hasPrefix); },
     killWord: (state, count) => { state.killWord(count); },
     backwardKillWord: (state, count) => { state.killWord(-count); },
-    yank: state => state.yank(),
-    yankPop: (state, count) => state.yankPop(count),
+    yank: (state, _count, _hasPrefix, lineEnding) => state.yank(lineEnding),
+    yankPop: (state, count, _hasPrefix, lineEnding) => state.yankPop(count, lineEnding),
     deleteChar: (state, count) => state.deleteCharacter(count),
     backwardDeleteChar: (state, count) => state.deleteCharacter(-count),
     deleteHorizontalSpace: (state, _count, hasPrefix) => state.deleteHorizontalSpace(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
-    openLine: (state, count) => { const origin = state.point; state.insert('\n'.repeat(Math.max(0, count))); state.point = origin; },
+    openLine: (state, count, _hasPrefix, lineEnding) => { const origin = state.point; state.insert(lineEnding.repeat(Math.max(0, count))); state.point = origin; },
     cancel: state => { prefix.reset(); contextUpdate(); state.cancel(); }
   };
   for (const [name, action] of Object.entries(actions)) register(name, action);

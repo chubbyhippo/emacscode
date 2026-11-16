@@ -6,7 +6,7 @@ class EditingWorld {
   constructor() { this.ring = new KillRing(); this.error = undefined; }
 }
 setWorldConstructor(EditingWorld);
-const unescape = value => value.replace(/\\n/g, '\n');
+const unescape = value => value.replace(/\\r/g, '\r').replace(/\\n/g, '\n');
 Given('text {string} at position {int}', function (text, point) { this.state = new EditorState(unescape(text), point, this.ring); });
 Given('a fresh prefix argument', function () { this.prefix = new PrefixArgument(); });
 When('I set the mark and move forward {int} characters', function (count) { this.state.setMark(); this.state.moveCharacter(count); });
@@ -21,6 +21,10 @@ When('I kill the line with prefix {int}', function (count) { try { this.state.ki
 When('I enter the universal argument twice', function () { this.prefix.universal(); this.prefix.universal(); });
 When('I enter negative digits {int} and {int}', function (first, second) { this.prefix.negative(); this.prefix.digit(first); this.prefix.digit(second); });
 When('I move to the beginning of the line', function () { this.state.lineBoundary(false); });
+When('I move to the end of the line', function () { this.state.lineBoundary(true); });
+When('I move forward {int} character', function (count) { this.state.moveCharacter(count); });
+When('I move down {int} line', function (count) { this.state.vertical(count); });
+When('I add an older kill {string}', function (text) { this.ring.add(unescape(text), 'forward', false); });
 When('I move to indentation', function () { this.state.backToIndentation(); });
 When('I mark a word', function () { this.state.markWord(1, false); });
 When('I mark words with prefix {int}', function (count) { this.state.markWord(count, true); });
@@ -35,6 +39,7 @@ Then('point is {int} and mark is {int}', function (point, mark) { assert.equal(t
 Then('the region is active', function () { assert.equal(this.state.active, true); });
 Then('the text is {string}', function (text) { assert.equal(this.state.text, unescape(text)); });
 Then('the newest kill is {string}', function (text) { assert.equal(this.ring.current(), unescape(text)); });
+Then('the kill ring contains {string} then {string}', function (first, second) { assert.deepEqual(this.ring.values(), [unescape(first), unescape(second)]); });
 Then('point is {int}', function (point) { assert.equal(this.state.point, point); });
 Then('an error is reported', function () { assert.ok(this.error); });
 Then('the consumed argument is {int}', function (count) { assert.equal(this.prefix.consume(), count); });

@@ -61,6 +61,44 @@ Feature: Emacs editing state
     Then the text is "\nabc"
     And point is 0
 
+  Scenario: An empty kill starts a new entry and the next kill appends
+    Given text "abc\ndef" at position 0
+    When I add an older kill "older"
+    And I kill the line with prefix 0
+    Then the kill ring contains "" then "older"
+    When I kill the line
+    Then the kill ring contains "abc" then "older"
+    When I yank
+    Then the text is "abc\ndef"
+
+  Scenario: Default kill before CRLF preserves the newline and yanks
+    Given text "alpha\r\nbeta" at position 2
+    When I kill the line
+    Then the text is "al\r\nbeta"
+    And the newest kill is "pha"
+    When I yank
+    Then the text is "alpha\r\nbeta"
+
+  Scenario: Consecutive CRLF kills retain complete line endings
+    Given text "alpha\r\nbeta\r\ngamma" at position 2
+    When I kill the line with prefix 1
+    And I kill the line with prefix 1
+    Then the text is "algamma"
+    And the newest kill is "pha\r\nbeta\r\n"
+    When I yank
+    Then the text is "alpha\r\nbeta\r\ngamma"
+
+  Scenario: CRLF movement stays on logical character boundaries
+    Given text "a\r\nbb\r\nc" at position 0
+    When I move to the end of the line
+    Then point is 1
+    When I move forward 1 character
+    Then point is 3
+    When I move backward 1 character
+    Then point is 1
+    When I move down 1 line
+    Then point is 4
+
   Scenario: Kill at end of buffer reports an error
     Given text "abc" at position 3
     When I kill the line

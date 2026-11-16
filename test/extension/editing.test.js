@@ -148,6 +148,81 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'alpha\r\nbeta');
     } finally { await vscode.env.clipboard.writeText(clipboard); }
   });
+  it('Given CRLF text When killing before the newline Then yank and undo preserve it', async function () {
+    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta',language:'plaintext'});
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit(builder => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(position, position);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.killLine');
+      assert.equal(document.getText(), 'al\r\nbeta');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(document.getText(), 'alpha\r\nbeta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), 'al\r\nbeta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), 'alpha\r\nbeta');
+    } finally { await vscode.env.clipboard.writeText(clipboard); }
+  });
+  it('Given CRLF text When killing two lines consecutively Then yank restores them', async function () {
+    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta\ngamma',language:'plaintext'});
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit(builder => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(position, position);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.digit1');
+      await vscode.commands.executeCommand('emacscode.killLine');
+      await vscode.commands.executeCommand('emacscode.digit1');
+      await vscode.commands.executeCommand('emacscode.killLine');
+      assert.equal(document.getText(), 'algamma');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(document.getText(), 'alpha\r\nbeta\r\ngamma');
+    } finally { await vscode.env.clipboard.writeText(clipboard); }
+  });
+  for (const sourceCRLF of [false, true]) {
+    it(`Given a ${sourceCRLF ? 'CRLF' : 'LF'} kill When yanked into the other EOL Then the destination EOL is used`, async function () {
+      const source = await vscode.workspace.openTextDocument({content:'one\ntwo',language:'plaintext'});
+      editor = await vscode.window.showTextDocument(source);
+      await editor.edit(builder => builder.setEndOfLine(sourceCRLF ? vscode.EndOfLine.CRLF : vscode.EndOfLine.LF));
+      const clipboard = await vscode.env.clipboard.readText();
+      try {
+        await vscode.commands.executeCommand('emacscode.digit1');
+        await vscode.commands.executeCommand('emacscode.killLine');
+        assert.equal(source.getText(), 'two');
+        const destination = await vscode.workspace.openTextDocument({content:'target\nend',language:'plaintext'});
+        editor = await vscode.window.showTextDocument(destination);
+        await editor.edit(builder => builder.setEndOfLine(sourceCRLF ? vscode.EndOfLine.LF : vscode.EndOfLine.CRLF));
+        await vscode.commands.executeCommand('emacscode.yank');
+        const eol = sourceCRLF ? '\n' : '\r\n';
+        assert.equal(destination.getText(), `one${eol}target${eol}end`);
+        await vscode.commands.executeCommand('undo');
+        assert.equal(destination.getText(), `target${eol}end`);
+      } finally { await vscode.env.clipboard.writeText(clipboard); }
+    });
+  }
+  it('Given a read-only document When a kill is rejected Then the ring and clipboard recover', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    const scheme = 'emacscode-readonly-test';
+    const provider = vscode.workspace.registerTextDocumentContentProvider(scheme, { provideTextDocumentContent: () => 'protected text' });
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(editor.document.getText(), ' beta');
+      const before = await vscode.env.clipboard.readText();
+      const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(`${scheme}:/readonly`));
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.killLine');
+      assert.equal(document.getText(), 'protected text');
+      assert.equal(await vscode.env.clipboard.readText(), before);
+      const destination = await vscode.workspace.openTextDocument({content:'destination',language:'plaintext'});
+      editor = await vscode.window.showTextDocument(destination);
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(destination.getText(), 'alphadestination');
+    } finally { provider.dispose(); await vscode.env.clipboard.writeText(clipboard); }
+  });
   it('Given Ctrl+T When transposing characters Then undo restores the document', async function () {
     const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
     assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'ctrl+t' && binding.command === 'emacscode.transposeCharacters'));
