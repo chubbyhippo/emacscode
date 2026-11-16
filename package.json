@@ -107,6 +107,10 @@
         "title": "emacscode: setMark"
       },
       {
+        "command": "emacscode.markWord",
+        "title": "emacscode: markWord"
+      },
+      {
         "command": "emacscode.exchangePointAndMark",
         "title": "emacscode: exchangePointAndMark"
       },
@@ -337,6 +341,11 @@
       {
         "key": "ctrl+space",
         "command": "emacscode.setMark",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+2",
+        "command": "emacscode.markWord",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

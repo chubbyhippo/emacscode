@@ -90,15 +90,24 @@ export class EditorState {
     this.point = Math.min(lineStart + goal, end < 0 ? this.text.length : end); this.goalColumn = goal; this.done('vertical');
   }
   private isWord(char: string): boolean { return /[\p{L}\p{N}]/u.test(char); }
-  public wordPosition(count: number): number {
-    let pos = this.point;
-    for (let n = 0; n < Math.abs(count); n++) {
-      if (count > 0) { while (pos < this.text.length && !this.isWord(this.text[pos])) pos++; while (pos < this.text.length && this.isWord(this.text[pos])) pos++; }
-      else { while (pos > 0 && !this.isWord(this.text[pos - 1])) pos--; while (pos > 0 && this.isWord(this.text[pos - 1])) pos--; }
+  public wordPosition(count: number, origin = this.point): number {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid word count');
+    let pos = origin;
+    for (let index = 0; index < Math.abs(count); index++) {
+      if (count > 0) { while (pos < this.text.length && !this.isWord(this.text[pos])) pos++; while (pos < this.text.length && this.isWord(this.text[pos])) pos++; if (pos === this.text.length) break; }
+      else { while (pos > 0 && !this.isWord(this.text[pos - 1])) pos--; while (pos > 0 && this.isWord(this.text[pos - 1])) pos--; if (pos === 0) break; }
     }
     return pos;
   }
   public moveWord(count: number): void { this.point = this.wordPosition(count); this.done('move'); }
+  public markWord(count: number, hasPrefix: boolean): void {
+    const extend = this.mark !== undefined && (this.active || this.previous === 'mark-word');
+    const origin = extend ? this.mark! : this.point;
+    const distance = hasPrefix ? count : extend && origin < this.point ? -1 : 1;
+    this.mark = this.wordPosition(distance, origin);
+    this.active = true;
+    this.done('mark-word');
+  }
   public changeWordCase(kind: 'upcase' | 'downcase' | 'capitalize', count: number): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid word count');
     const origin = this.point;

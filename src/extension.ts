@@ -98,6 +98,7 @@ export function activate(context: vscode.ExtensionContext): void {
     beginningOfBuffer: state => state.bufferBoundary(false),
     endOfBuffer: state => state.bufferBoundary(true),
     setMark: state => state.setMark(),
+    markWord: (state, count, hasPrefix) => state.markWord(count, hasPrefix),
     exchangePointAndMark: state => state.exchange(),
     markWholeBuffer: state => state.selectAll(),
     killRegion: state => { state.region(); },

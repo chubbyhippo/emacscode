@@ -229,6 +229,28 @@ describe('emacscode editor behavior', function () {
       assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === key && binding.command === command && binding.when.includes('emacscode.markActive')));
     }
   });
+  it('Given mark-word When repeated Then mark extends while point stays fixed', async function () {
+    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
+    assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'alt+shift+2' && binding.command === 'emacscode.markWord'));
+    await vscode.commands.executeCommand('emacscode.markWord');
+    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [5, 0]);
+    await vscode.commands.executeCommand('emacscode.markWord');
+    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [10, 0]);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [0, 10]);
+    await vscode.commands.executeCommand('emacscode.cancel');
+    assert.ok(editor.selection.isEmpty);
+  });
+  it('Given a negative prefix When marking words Then the region extends backward', async function () {
+    const position = new vscode.Position(0, 10);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.negativeArgument');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.markWord');
+    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [0, 10]);
+    assert.equal(editor.document.getText(editor.selection), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a mark When selecting and killing a word Then yank restores it', async function () {
     await vscode.commands.executeCommand('emacscode.setMark');
     await vscode.commands.executeCommand('emacscode.forwardWord');

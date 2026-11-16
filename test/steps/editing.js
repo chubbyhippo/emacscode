@@ -21,6 +21,8 @@ When('I enter the universal argument twice', function () { this.prefix.universal
 When('I enter negative digits {int} and {int}', function (first, second) { this.prefix.negative(); this.prefix.digit(first); this.prefix.digit(second); });
 When('I move to the beginning of the line', function () { this.state.lineBoundary(false); });
 When('I move to indentation', function () { this.state.backToIndentation(); });
+When('I mark a word', function () { this.state.markWord(1, false); });
+When('I mark words with prefix {int}', function (count) { this.state.markWord(count, true); });
 When('I kill the previous word twice', function () { this.state.killWord(-1); this.state.killWord(-1); });
 When('I create two distinct kills and yank', function () { this.state.killWord(1); this.state.moveCharacter(1); this.state.killWord(1); this.state.yank(); });
 When('I rotate the yank', function () { this.state.yankPop(); });

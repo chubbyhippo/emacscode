@@ -197,3 +197,29 @@ Feature: Emacs editing state
     Given text "one\n  \ntwo" at position 4
     When I move to indentation
     Then point is 6
+
+  Scenario: Mark a word and extend the region
+    Given text "alpha beta gamma" at position 0
+    When I mark a word
+    Then point is 0 and mark is 5
+    And the region is active
+    When I mark a word
+    Then point is 0 and mark is 10
+
+  Scenario: Mark previous words with a negative prefix
+    Given text "alpha beta gamma" at position 11
+    When I mark words with prefix -2
+    Then point is 11 and mark is 0
+    And the region is active
+
+  Scenario: Zero prefix creates an empty active region
+    Given text "alpha beta" at position 6
+    When I mark words with prefix 0
+    Then point is 6 and mark is 6
+    And the region is active
+
+  Scenario: Marking beyond the end leaves an empty region
+    Given text "alpha" at position 5
+    When I mark a word
+    Then point is 5 and mark is 5
+    And the region is active

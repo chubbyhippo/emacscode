@@ -7,7 +7,7 @@ const bindings = [
   ['ctrl+b','backwardChar'], ['ctrl+f','forwardChar'], ['ctrl+p','previousLine'], ['ctrl+n','nextLine'],
   ['ctrl+a','beginningOfLine'], ['ctrl+e','endOfLine'], ['alt+b','backwardWord'], ['alt+f','forwardWord'],
   ['alt+u','upcaseWord'], ['alt+l','downcaseWord'], ['alt+c','capitalizeWord'], ['alt+m','backToIndentation'],
-  ['alt+shift+,','beginningOfBuffer'], ['alt+shift+.','endOfBuffer'], ['ctrl+space','setMark'],
+  ['alt+shift+,','beginningOfBuffer'], ['alt+shift+.','endOfBuffer'], ['ctrl+space','setMark'], ['alt+shift+2','markWord'],
   ['ctrl+x ctrl+x','exchangePointAndMark'], ['ctrl+x h','markWholeBuffer'], ['ctrl+w','killRegion'],
   ['alt+w','copyRegion'], ['ctrl+k','killLine'], ['alt+d','killWord'], ['alt+backspace','backwardKillWord'],
   ['alt+z','zapToChar'], ['alt+\\','deleteHorizontalSpace'], ['ctrl+y','yank'], ['alt+y','yankPop'], ['ctrl+d','deleteChar'], ['ctrl+t','transposeCharacters'], ['ctrl+o','openLine'], ['ctrl+g','cancel'],
