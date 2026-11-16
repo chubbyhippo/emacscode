@@ -136,11 +136,26 @@ export class EditorState {
     this.active = false; this.done(copy ? 'copy' : 'kill'); return value;
   }
   public region(copy = false): string { if (this.mark === undefined || !this.active) throw new Error('No active region'); return this.kill(this.mark, this.point, this.point < this.mark ? 'backward' : 'forward', copy); }
-  public killLine(count: number): string {
-    if (count === 0) { const start = this.text.lastIndexOf('\n', this.point - 1) + 1; return this.kill(start, this.point, 'backward'); }
-    if (count < 0) { let start = this.point; for (let n = 0; n < -count; n++) start = this.text.lastIndexOf('\n', Math.max(-1, start - 2)) + 1; return this.kill(start, this.point, 'backward'); }
+  public killLine(count: number, hasPrefix = false): string {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid line count');
+    if (!hasPrefix) {
+      if (this.point === this.text.length) throw new Error('End of buffer');
+      const newline = this.text.indexOf('\n', this.point);
+      const end = newline < 0 ? this.text.length : newline > 0 && this.text[newline - 1] === '\r' ? newline - 1 : newline;
+      const includeNewline = newline >= 0 && /^[ \t]*$/.test(this.text.slice(this.point, end));
+      return this.kill(this.point, includeNewline ? newline + 1 : end, 'forward');
+    }
+    if (count <= 0) {
+      let start = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
+      for (let index = 0; index < -count && start > 0; index++) start = start <= 1 ? 0 : this.text.lastIndexOf('\n', start - 2) + 1;
+      return this.kill(start, this.point, 'backward');
+    }
     let end = this.point;
-    for (let n = 0; n < count; n++) { const next = this.text.indexOf('\n', end); if (next < 0) { end = this.text.length; break; } end = next === end || n < count - 1 ? next + 1 : next; }
+    for (let index = 0; index < count; index++) {
+      const next = this.text.indexOf('\n', end);
+      if (next < 0) { end = this.text.length; break; }
+      end = next + 1;
+    }
     return this.kill(this.point, end, 'forward');
   }
   public killWord(count: number): string { const end = this.wordPosition(count); return this.kill(this.point, end, count < 0 ? 'backward' : 'forward'); }

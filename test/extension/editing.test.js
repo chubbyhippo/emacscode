@@ -120,6 +120,34 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.selection.active.character, 5);
     assert.equal(document.getText(), '  first\n    second');
   });
+  it('Given a numeric prefix When killing a line Then it includes the newline and undo restores it', async function () {
+    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta',language:'plaintext'});
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(position, position);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.digit1');
+      await vscode.commands.executeCommand('emacscode.killLine');
+      assert.equal(document.getText(), 'albeta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), 'alpha\nbeta');
+    } finally { await vscode.env.clipboard.writeText(clipboard); }
+  });
+  it('Given a CRLF line When killing through its end Then the line ending is removed intact', async function () {
+    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta',language:'plaintext'});
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit(builder => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 5);
+    editor.selection = new vscode.Selection(position, position);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.killLine');
+      assert.equal(document.getText(), 'alphabeta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), 'alpha\r\nbeta');
+    } finally { await vscode.env.clipboard.writeText(clipboard); }
+  });
   it('Given Ctrl+T When transposing characters Then undo restores the document', async function () {
     const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
     assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'ctrl+t' && binding.command === 'emacscode.transposeCharacters'));

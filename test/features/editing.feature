@@ -36,6 +36,37 @@ Feature: Emacs editing state
     Then the text is "alphabeta"
     And the newest kill is "\n"
 
+  Scenario: An explicit prefix kills through the newline
+    Given text "alpha\nbeta" at position 2
+    When I kill the line with prefix 1
+    Then the text is "albeta"
+    And the newest kill is "pha\n"
+
+  Scenario: Default kill includes trailing whitespace and newline
+    Given text "abc  \ndef" at position 3
+    When I kill the line
+    Then the text is "abcdef"
+    And the newest kill is "  \n"
+
+  Scenario: Negative prefix kills into preceding lines
+    Given text "abc\ndef\nghi" at position 5
+    When I kill the line with prefix -1
+    Then the text is "ef\nghi"
+    And the newest kill is "abc\nd"
+    And point is 0
+
+  Scenario: Zero prefix at an empty first line preserves text
+    Given text "\nabc" at position 0
+    When I kill the line with prefix 0
+    Then the text is "\nabc"
+    And point is 0
+
+  Scenario: Kill at end of buffer reports an error
+    Given text "abc" at position 3
+    When I kill the line
+    Then an error is reported
+    And the text is "abc"
+
   Scenario: Repeat universal argument
     Given a fresh prefix argument
     When I enter the universal argument twice

@@ -16,7 +16,8 @@ When('I kill the next word twice', function () { this.state.killWord(1); this.st
 When('I yank', function () { this.state.yank(); });
 When('I try yank pop', function () { try { this.state.yankPop(); } catch (error) { this.error = error; } });
 When('I move backward {int} character', function (count) { this.state.moveCharacter(-count); });
-When('I kill the line', function () { this.state.killLine(1); });
+When('I kill the line', function () { try { this.state.killLine(1); } catch (error) { this.error = error; } });
+When('I kill the line with prefix {int}', function (count) { try { this.state.killLine(count, true); } catch (error) { this.error = error; } });
 When('I enter the universal argument twice', function () { this.prefix.universal(); this.prefix.universal(); });
 When('I enter negative digits {int} and {int}', function (first, second) { this.prefix.negative(); this.prefix.digit(first); this.prefix.digit(second); });
 When('I move to the beginning of the line', function () { this.state.lineBoundary(false); });

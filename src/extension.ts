@@ -103,7 +103,7 @@ export function activate(context: vscode.ExtensionContext): void {
     markWholeBuffer: state => state.selectAll(),
     killRegion: state => { state.region(); },
     copyRegion: state => { state.region(true); },
-    killLine: (state, count) => { state.killLine(count); },
+    killLine: (state, count, hasPrefix) => { state.killLine(count, hasPrefix); },
     killWord: (state, count) => { state.killWord(count); },
     backwardKillWord: (state, count) => { state.killWord(-count); },
     yank: state => state.yank(),
