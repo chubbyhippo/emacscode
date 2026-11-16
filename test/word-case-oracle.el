@@ -1,0 +1,17 @@
+(require 'json)
+(let ((results nil))
+  (dolist (case '(("upcase" "hello world" 0 1) ("downcase" "HELLO WORLD" 2 1)
+                  ("capitalize" "hELLO wORLD" 0 2) ("capitalize" "hELLO wORLD" 2 1)
+                  ("upcase" "one two three" 8 -2) ("downcase" "ONE TWO THREE" 8 -1)
+                  ("capitalize" "ONE TWO THREE" 8 -1) ("upcase" "one two" 2 0)
+                  ("upcase" "a b" 0 5) ("capitalize" "foo-bar 123ABC" 0 3)))
+    (with-temp-buffer
+      (fundamental-mode)
+      (insert (nth 1 case))
+      (goto-char (1+ (nth 2 case)))
+      (condition-case nil
+          (funcall (intern (concat (car case) "-word")) (nth 3 case))
+        (error nil))
+      (push `((kind . ,(car case)) (input . ,(nth 1 case)) (start . ,(nth 2 case))
+              (count . ,(nth 3 case)) (text . ,(buffer-string)) (point . ,(1- (point)))) results)))
+  (princ (json-encode (nreverse results))))

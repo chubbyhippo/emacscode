@@ -1,0 +1,10 @@
+(require 'json)
+(with-temp-buffer
+  (fundamental-mode)
+  (transient-mark-mode 1)
+  (setq-local kill-ring nil)
+  (insert "alpha beta")
+  (goto-char (point-min))
+  (switch-to-buffer (current-buffer))
+  (execute-kbd-macro (kbd "M-d M-d C-y"))
+  (princ (json-encode `((text . ,(buffer-string)) (point . ,(point)) (mark . ,(mark t)) (kill . ,(car kill-ring))))))

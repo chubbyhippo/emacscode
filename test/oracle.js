@@ -1,0 +1,17 @@
+const { execFileSync } = require('node:child_process');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { EditorState, KillRing } = require('../out/core/editor');
+const binary = process.env.EMACS_ORACLE;
+if (!binary) throw new Error('Set EMACS_ORACLE to GNU Emacs 31.1 executable');
+const version = execFileSync(binary, ['--version'], {encoding:'utf8'});
+assert.match(version, /GNU Emacs 31\.1\b/);
+const output = execFileSync(binary, ['--batch','-Q','-l',path.join(__dirname,'oracle.el')], {encoding:'utf8'});
+const expected = JSON.parse(output);
+const ring = new KillRing();
+const state = new EditorState('alpha beta',0,ring);
+state.killWord(1);
+state.killWord(1);
+state.yank();
+assert.deepEqual({text:state.text,point:state.point+1,mark:state.mark+1,kill:ring.current()},expected);
+console.log('GNU Emacs 31.1 kill/yank command-loop oracle passed');

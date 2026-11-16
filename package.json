@@ -1,0 +1,804 @@
+{
+  "name": "emacscode",
+  "displayName": "emacscode",
+  "description": "Emacs-style editing for VS Code",
+  "version": "0.1.0",
+  "publisher": "emacscode",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Keymaps",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "build:vsix": "npm run compile && npm exec --yes --package @vscode/vsce@4.1.1 -- vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
+    "test:core": "cucumber-js --require test/steps/**/*.js test/features/**/*.feature && node test/search-decorations.js",
+    "test:extension": "vscode-test",
+    "test": "npm run compile && npm run test:core"
+  },
+  "contributes": {
+    "configurationDefaults": {
+      "editor.cursorStyle": "block"
+    },
+    "configuration": {
+      "title": "emacscode",
+      "properties": {
+        "emacscode.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Emacs-style editor keybindings."
+        },
+        "emacscode.killRingSize": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Maximum in-memory kill ring entries."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "emacscode.toggle",
+        "title": "emacscode: Toggle Emacs Keybindings"
+      },
+      {
+        "command": "emacscode.backwardChar",
+        "title": "emacscode: backwardChar"
+      },
+      {
+        "command": "emacscode.forwardChar",
+        "title": "emacscode: forwardChar"
+      },
+      {
+        "command": "emacscode.previousLine",
+        "title": "emacscode: previousLine"
+      },
+      {
+        "command": "emacscode.nextLine",
+        "title": "emacscode: nextLine"
+      },
+      {
+        "command": "emacscode.beginningOfLine",
+        "title": "emacscode: beginningOfLine"
+      },
+      {
+        "command": "emacscode.endOfLine",
+        "title": "emacscode: endOfLine"
+      },
+      {
+        "command": "emacscode.backwardWord",
+        "title": "emacscode: backwardWord"
+      },
+      {
+        "command": "emacscode.forwardWord",
+        "title": "emacscode: forwardWord"
+      },
+      {
+        "command": "emacscode.upcaseWord",
+        "title": "emacscode: upcaseWord"
+      },
+      {
+        "command": "emacscode.downcaseWord",
+        "title": "emacscode: downcaseWord"
+      },
+      {
+        "command": "emacscode.capitalizeWord",
+        "title": "emacscode: capitalizeWord"
+      },
+      {
+        "command": "emacscode.backToIndentation",
+        "title": "emacscode: backToIndentation"
+      },
+      {
+        "command": "emacscode.beginningOfBuffer",
+        "title": "emacscode: beginningOfBuffer"
+      },
+      {
+        "command": "emacscode.endOfBuffer",
+        "title": "emacscode: endOfBuffer"
+      },
+      {
+        "command": "emacscode.setMark",
+        "title": "emacscode: setMark"
+      },
+      {
+        "command": "emacscode.exchangePointAndMark",
+        "title": "emacscode: exchangePointAndMark"
+      },
+      {
+        "command": "emacscode.markWholeBuffer",
+        "title": "emacscode: markWholeBuffer"
+      },
+      {
+        "command": "emacscode.killRegion",
+        "title": "emacscode: killRegion"
+      },
+      {
+        "command": "emacscode.copyRegion",
+        "title": "emacscode: copyRegion"
+      },
+      {
+        "command": "emacscode.killLine",
+        "title": "emacscode: killLine"
+      },
+      {
+        "command": "emacscode.killWord",
+        "title": "emacscode: killWord"
+      },
+      {
+        "command": "emacscode.backwardKillWord",
+        "title": "emacscode: backwardKillWord"
+      },
+      {
+        "command": "emacscode.zapToChar",
+        "title": "emacscode: zapToChar"
+      },
+      {
+        "command": "emacscode.deleteHorizontalSpace",
+        "title": "emacscode: deleteHorizontalSpace"
+      },
+      {
+        "command": "emacscode.yank",
+        "title": "emacscode: yank"
+      },
+      {
+        "command": "emacscode.yankPop",
+        "title": "emacscode: yankPop"
+      },
+      {
+        "command": "emacscode.deleteChar",
+        "title": "emacscode: deleteChar"
+      },
+      {
+        "command": "emacscode.transposeCharacters",
+        "title": "emacscode: transposeCharacters"
+      },
+      {
+        "command": "emacscode.openLine",
+        "title": "emacscode: openLine"
+      },
+      {
+        "command": "emacscode.cancel",
+        "title": "emacscode: cancel"
+      },
+      {
+        "command": "emacscode.searchForward",
+        "title": "emacscode: searchForward"
+      },
+      {
+        "command": "emacscode.searchBackward",
+        "title": "emacscode: searchBackward"
+      },
+      {
+        "command": "emacscode.copyToRegister",
+        "title": "emacscode: copyToRegister"
+      },
+      {
+        "command": "emacscode.insertRegister",
+        "title": "emacscode: insertRegister"
+      },
+      {
+        "command": "emacscode.numberToRegister",
+        "title": "emacscode: numberToRegister"
+      },
+      {
+        "command": "emacscode.incrementRegister",
+        "title": "emacscode: incrementRegister"
+      },
+      {
+        "command": "emacscode.rectangleKill",
+        "title": "emacscode: rectangleKill"
+      },
+      {
+        "command": "emacscode.rectangleCopy",
+        "title": "emacscode: rectangleCopy"
+      },
+      {
+        "command": "emacscode.rectangleDelete",
+        "title": "emacscode: rectangleDelete"
+      },
+      {
+        "command": "emacscode.rectangleClear",
+        "title": "emacscode: rectangleClear"
+      },
+      {
+        "command": "emacscode.rectangleOpen",
+        "title": "emacscode: rectangleOpen"
+      },
+      {
+        "command": "emacscode.rectangleYank",
+        "title": "emacscode: rectangleYank"
+      },
+      {
+        "command": "emacscode.universalArgument",
+        "title": "emacscode: universalArgument"
+      },
+      {
+        "command": "emacscode.negativeArgument",
+        "title": "emacscode: negativeArgument"
+      },
+      {
+        "command": "emacscode.digit0",
+        "title": "emacscode: Digit 0"
+      },
+      {
+        "command": "emacscode.digit1",
+        "title": "emacscode: Digit 1"
+      },
+      {
+        "command": "emacscode.digit2",
+        "title": "emacscode: Digit 2"
+      },
+      {
+        "command": "emacscode.digit3",
+        "title": "emacscode: Digit 3"
+      },
+      {
+        "command": "emacscode.digit4",
+        "title": "emacscode: Digit 4"
+      },
+      {
+        "command": "emacscode.digit5",
+        "title": "emacscode: Digit 5"
+      },
+      {
+        "command": "emacscode.digit6",
+        "title": "emacscode: Digit 6"
+      },
+      {
+        "command": "emacscode.digit7",
+        "title": "emacscode: Digit 7"
+      },
+      {
+        "command": "emacscode.digit8",
+        "title": "emacscode: Digit 8"
+      },
+      {
+        "command": "emacscode.digit9",
+        "title": "emacscode: Digit 9"
+      }
+    ],
+    "keybindings": [
+      {
+        "key": "ctrl+b",
+        "command": "emacscode.backwardChar",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+f",
+        "command": "emacscode.forwardChar",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+p",
+        "command": "emacscode.previousLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+n",
+        "command": "emacscode.nextLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+a",
+        "command": "emacscode.beginningOfLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+e",
+        "command": "emacscode.endOfLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+b",
+        "command": "emacscode.backwardWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+f",
+        "command": "emacscode.forwardWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+u",
+        "command": "emacscode.upcaseWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+l",
+        "command": "emacscode.downcaseWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+c",
+        "command": "emacscode.capitalizeWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+m",
+        "command": "emacscode.backToIndentation",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+,",
+        "command": "emacscode.beginningOfBuffer",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+.",
+        "command": "emacscode.endOfBuffer",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+space",
+        "command": "emacscode.setMark",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+x",
+        "command": "emacscode.exchangePointAndMark",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x h",
+        "command": "emacscode.markWholeBuffer",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+w",
+        "command": "emacscode.killRegion",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+w",
+        "command": "emacscode.copyRegion",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+k",
+        "command": "emacscode.killLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+d",
+        "command": "emacscode.killWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+backspace",
+        "command": "emacscode.backwardKillWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+z",
+        "command": "emacscode.zapToChar",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+\\",
+        "command": "emacscode.deleteHorizontalSpace",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+y",
+        "command": "emacscode.yank",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+y",
+        "command": "emacscode.yankPop",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+d",
+        "command": "emacscode.deleteChar",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+t",
+        "command": "emacscode.transposeCharacters",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+o",
+        "command": "emacscode.openLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+g",
+        "command": "emacscode.cancel",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+s",
+        "command": "emacscode.searchForward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+r",
+        "command": "emacscode.searchBackward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r s",
+        "command": "emacscode.copyToRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r x",
+        "command": "emacscode.copyToRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r i",
+        "command": "emacscode.insertRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r g",
+        "command": "emacscode.insertRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r n",
+        "command": "emacscode.numberToRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r shift+=",
+        "command": "emacscode.incrementRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r k",
+        "command": "emacscode.rectangleKill",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r alt+w",
+        "command": "emacscode.rectangleCopy",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r d",
+        "command": "emacscode.rectangleDelete",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r c",
+        "command": "emacscode.rectangleClear",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r o",
+        "command": "emacscode.rectangleOpen",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r y",
+        "command": "emacscode.rectangleYank",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+u",
+        "command": "emacscode.universalArgument",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+-",
+        "command": "emacscode.negativeArgument",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+f",
+        "command": "workbench.action.files.openFile",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+s",
+        "command": "workbench.action.files.save",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+w",
+        "command": "workbench.action.files.saveAs",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x s",
+        "command": "saveAll",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x b",
+        "command": "workbench.action.showAllEditorsByMostRecentlyUsed",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x k",
+        "command": "workbench.action.closeActiveEditor",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x 2",
+        "command": "workbench.action.splitEditorDown",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x 3",
+        "command": "workbench.action.splitEditorRight",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x o",
+        "command": "workbench.action.focusNextGroup",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x 0",
+        "command": "workbench.action.closeGroup",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x 1",
+        "command": "workbench.action.joinAllGroups",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+x",
+        "command": "workbench.action.showCommands",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+/",
+        "command": "undo",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x u",
+        "command": "undo",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+5",
+        "command": "editor.action.startFindReplaceAction",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+h b",
+        "command": "workbench.action.openGlobalKeybindings",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+s",
+        "command": "emacscode.isearchForward",
+        "when": "config.emacscode.enabled && inQuickInput && emacscode.isearchActive"
+      },
+      {
+        "key": "ctrl+r",
+        "command": "emacscode.isearchBackward",
+        "when": "config.emacscode.enabled && inQuickInput && emacscode.isearchActive"
+      },
+      {
+        "key": "ctrl+g",
+        "command": "emacscode.isearchCancel",
+        "when": "config.emacscode.enabled && inQuickInput && emacscode.isearchActive"
+      },
+      {
+        "key": "alt+p",
+        "command": "emacscode.isearchPreviousHistory",
+        "when": "config.emacscode.enabled && inQuickInput && emacscode.isearchActive"
+      },
+      {
+        "key": "alt+n",
+        "command": "emacscode.isearchNextHistory",
+        "when": "config.emacscode.enabled && inQuickInput && emacscode.isearchActive"
+      },
+      {
+        "key": "left",
+        "command": "cursorLeftSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "right",
+        "command": "cursorRightSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "up",
+        "command": "cursorUpSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "down",
+        "command": "cursorDownSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "home",
+        "command": "cursorHomeSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "end",
+        "command": "cursorEndSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "pageup",
+        "command": "cursorPageUpSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "pagedown",
+        "command": "cursorPageDownSelect",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.markActive"
+      },
+      {
+        "key": "alt+0",
+        "command": "emacscode.digit0",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "0",
+        "command": "emacscode.digit0",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+0",
+        "command": "emacscode.digit0",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+1",
+        "command": "emacscode.digit1",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "1",
+        "command": "emacscode.digit1",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+1",
+        "command": "emacscode.digit1",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+2",
+        "command": "emacscode.digit2",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "2",
+        "command": "emacscode.digit2",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+2",
+        "command": "emacscode.digit2",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+3",
+        "command": "emacscode.digit3",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "3",
+        "command": "emacscode.digit3",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+3",
+        "command": "emacscode.digit3",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+4",
+        "command": "emacscode.digit4",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "4",
+        "command": "emacscode.digit4",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+4",
+        "command": "emacscode.digit4",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+5",
+        "command": "emacscode.digit5",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "5",
+        "command": "emacscode.digit5",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+5",
+        "command": "emacscode.digit5",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+6",
+        "command": "emacscode.digit6",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "6",
+        "command": "emacscode.digit6",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+6",
+        "command": "emacscode.digit6",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+7",
+        "command": "emacscode.digit7",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "7",
+        "command": "emacscode.digit7",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+7",
+        "command": "emacscode.digit7",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+8",
+        "command": "emacscode.digit8",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "8",
+        "command": "emacscode.digit8",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+8",
+        "command": "emacscode.digit8",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "alt+9",
+        "command": "emacscode.digit9",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "9",
+        "command": "emacscode.digit9",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      },
+      {
+        "key": "ctrl+9",
+        "command": "emacscode.digit9",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^13.3.0",
+    "@types/node": "^22.15.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.9.2",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^2.5.2",
+    "@types/mocha": "^10.0.10",
+    "mocha": "^11.7.0"
+  }
+}
