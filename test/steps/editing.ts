@@ -28,6 +28,10 @@ When('I move to the beginning of the line', function () { this.state.lineBoundar
 When('I move to the end of the line', function () { this.state.lineBoundary(true); });
 When('I move to the {word} of the line with prefix {int}', function (boundary, count) { this.state.lineBoundary(boundary === 'end', count); });
 When('I move forward {int} character', function (count) { this.state.moveCharacter(count); });
+When('I move forward {int} word', function (count) { this.state.moveWord(count); });
+When('I move backward {int} word', function (count) { this.state.moveWord(-count); });
+When('I try moving forward a word', function () { try { this.state.moveWord(1); } catch (error) { this.error = error; } });
+When('I kill the next word', function () { this.state.killWord(1); });
 When('I move down {int} line', function (count) { this.state.vertical(count); });
 When('I move up {int} line', function (count) { this.state.vertical(-count); });
 When('I add an older kill {string}', function (text) { this.ring.add(unescape(text), 'forward', false); });

@@ -99,6 +99,24 @@ describe('emacscode editor behavior', function () {
       await vscode.commands.executeCommand('emacscode.cancel');
     });
   }
+  it('Given a supplementary word When moving, killing and yanking Then its characters remain intact', async function () {
+    const document = await vscode.workspace.openTextDocument({content:'a𐐀b c',language:'plaintext'});
+    editor = await vscode.window.showTextDocument(document);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.forwardWord');
+      assert.equal(editor.selection.active.character, 4);
+      await vscode.commands.executeCommand('emacscode.backwardWord');
+      assert.equal(editor.selection.active.character, 0);
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(document.getText(), ' c');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(document.getText(), 'a𐐀b c');
+      assert.equal(editor.selection.active.character, 4);
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), ' c');
+    } finally { await vscode.env.clipboard.writeText(clipboard); }
+  });
   it('Given a negative prefix When downcasing Then point stays after the word', async function () {
     const document = await vscode.workspace.openTextDocument({content:'ONE TWO THREE',language:'plaintext'});
     editor = await vscode.window.showTextDocument(document);

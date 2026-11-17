@@ -83,6 +83,48 @@ Feature: Emacs editing state
     When I move backward 1 character
     Then point is 1
 
+  Scenario: Word movement preserves supplementary letters
+    Given text "a𐐀b c" at position 0
+    When I move forward 1 word
+    Then point is 4
+    When I move backward 1 word
+    Then point is 0
+
+  Scenario: Word movement skips supplementary non-letters intact
+    Given text "😀𐐀b!" at position 0
+    When I move forward 1 word
+    Then point is 5
+    When I move backward 1 word
+    Then point is 2
+
+  Scenario: Killing and yanking a supplementary word preserves every character
+    Given text "a𐐀b c" at position 0
+    When I kill the next word
+    Then the text is " c"
+    And the newest kill is "a𐐀b"
+    When I yank
+    Then the text is "a𐐀b c"
+
+  Scenario: Marking a supplementary word never splits a character
+    Given text "a𐐀b c" at position 0
+    When I mark a word
+    Then point is 0 and mark is 4
+    And the region is active
+
+  Scenario: Word movement rejects a point inside a surrogate pair
+    Given text "a𐐀b" at position 2
+    When I try moving forward a word
+    Then an error is reported
+    And point is 2
+    And the text is "a𐐀b"
+
+  Scenario: Vertical movement avoids splitting a supplementary character
+    Given text "a\n𐐀b" at position 1
+    When I move down 1 line
+    Then point is 2
+    When I move forward 1 word
+    Then point is 5
+
   Scenario: Killing at end of line removes the newline
     Given text "alpha\nbeta" at position 5
     When I kill the line

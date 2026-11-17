@@ -105,15 +105,29 @@ export class EditorState {
     }
     const end = this.text.indexOf('\n', lineStart);
     const lineEnd = end < 0 ? this.text.length : end > lineStart && this.text[end - 1] === '\r' ? end - 1 : end;
-    this.point = Math.min(lineStart + goal, lineEnd); this.goalColumn = goal; this.done('vertical');
+    this.point = Math.min(lineStart + goal, lineEnd);
+    if (this.point > lineStart && this.point < lineEnd && this.text.charCodeAt(this.point) >= 0xdc00 && this.text.charCodeAt(this.point) <= 0xdfff && this.text.charCodeAt(this.point - 1) >= 0xd800 && this.text.charCodeAt(this.point - 1) <= 0xdbff) this.point--;
+    this.goalColumn = goal; this.done('vertical');
   }
   private isWord(char: string): boolean { return /[\p{L}\p{N}]/u.test(char); }
   public wordPosition(count: number, origin = this.point): number {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid word count');
     let pos = origin;
+    const isSplitSurrogate = (offset: number): boolean => offset > 0 && offset < this.text.length && this.text.charCodeAt(offset) >= 0xdc00 && this.text.charCodeAt(offset) <= 0xdfff && this.text.charCodeAt(offset - 1) >= 0xd800 && this.text.charCodeAt(offset - 1) <= 0xdbff;
+    if (isSplitSurrogate(pos)) throw new Error('Point is not at a character boundary');
+    const next = (offset: number): number => offset + String.fromCodePoint(this.text.codePointAt(offset)!).length;
+    const previous = (offset: number): number => isSplitSurrogate(offset - 1) ? offset - 2 : offset - 1;
+    const wordAt = (offset: number): boolean => this.isWord(String.fromCodePoint(this.text.codePointAt(offset)!));
     for (let index = 0; index < Math.abs(count); index++) {
-      if (count > 0) { while (pos < this.text.length && !this.isWord(this.text[pos])) pos++; while (pos < this.text.length && this.isWord(this.text[pos])) pos++; if (pos === this.text.length) break; }
-      else { while (pos > 0 && !this.isWord(this.text[pos - 1])) pos--; while (pos > 0 && this.isWord(this.text[pos - 1])) pos--; if (pos === 0) break; }
+      if (count > 0) {
+        while (pos < this.text.length && !wordAt(pos)) pos = next(pos);
+        while (pos < this.text.length && wordAt(pos)) pos = next(pos);
+        if (pos === this.text.length) break;
+      } else {
+        while (pos > 0 && !wordAt(previous(pos))) pos = previous(pos);
+        while (pos > 0 && wordAt(previous(pos))) pos = previous(pos);
+        if (pos === 0) break;
+      }
     }
     return pos;
   }
