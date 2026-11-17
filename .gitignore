@@ -1,6 +1,7 @@
 node_modules/
 out/
 .build/
+docs/
 .axet-code/
 test/inventory*.ts
 .vscode-test/
