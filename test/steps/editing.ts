@@ -55,6 +55,16 @@ When('I try yank pop', function () {
 When('I move backward {int} character', function (count) {
   this.state.moveCharacter(-count);
 });
+When('I try moving {int} characters', function (count) {
+  try {
+    this.state.moveCharacter(count);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I delete {int} characters', function (count) {
+  this.state.deleteCharacter(count);
+});
 When('I kill the line', function () {
   try {
     this.state.killLine(1);

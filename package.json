@@ -24,7 +24,7 @@
     "compile": "tsc -p ./",
     "configure:manifest": "npm run compile:tools && node .build/configure-manifest.js",
     "build:vsix": "npm run compile && npm exec --yes --package @vscode/vsce@4.1.1 -- vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
-    "test:core": "npm run compile && cucumber-js --require .build/test/steps/**/*.js test/features/**/*.feature && node .build/test/search-decorations.js && node .build/test/setup-emacs.js",
+    "test:core": "npm run compile && cucumber-js --require .build/test/steps/**/*.js test/features/**/*.feature && node .build/test/search-decorations.js && node .build/test/region-clipboard.js && node .build/test/setup-emacs.js",
     "test:extension": "npm run compile && vscode-test --config .build/.vscode-test.mjs",
     "test:oracle": "npm run compile && node .build/scripts/run-oracles.js",
     "test": "npm run test:core"

@@ -1,5 +1,11 @@
 export type Direction = 'forward' | 'backward';
 
+export class CharacterBoundaryError extends Error {
+  constructor(public readonly boundary: 'beginning-of-buffer' | 'end-of-buffer') {
+    super(boundary === 'beginning-of-buffer' ? 'Beginning of buffer' : 'End of buffer');
+  }
+}
+
 export class KillRing {
   private entries: string[] = [];
   private index = 0;
@@ -146,8 +152,14 @@ export class EditorState {
     this.done('edit');
   }
   public moveCharacter(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid character count');
     let position = this.point;
     for (let index = 0; index < Math.abs(count); index++) {
+      if ((count > 0 && position >= this.text.length) || (count < 0 && position <= 0)) {
+        this.point = position;
+        this.done('move');
+        throw new CharacterBoundaryError(count > 0 ? 'end-of-buffer' : 'beginning-of-buffer');
+      }
       if (count > 0 && position < this.text.length) {
         const code = this.text.codePointAt(position);
         position +=
@@ -486,7 +498,11 @@ export class EditorState {
   }
   public deleteCharacter(count: number): void {
     const origin = this.point;
-    this.moveCharacter(count);
+    try {
+      this.moveCharacter(count);
+    } catch (error) {
+      if (!(error instanceof CharacterBoundaryError)) throw error;
+    }
     const end = this.point;
     this.replace(Math.min(origin, end), Math.max(origin, end), '');
     this.done('delete');

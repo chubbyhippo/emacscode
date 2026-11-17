@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { EditorState, KillRing, PrefixArgument } from './core/editor';
+import { CharacterBoundaryError, EditorState, KillRing, PrefixArgument } from './core/editor';
 import { SearchController } from './search';
 import { Registers } from './core/registers';
 import { editRectangle, RectangleAction, yankRectangle } from './core/rectangles';
@@ -165,6 +165,15 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
               }
             } catch (error) {
+              if (error instanceof CharacterBoundaryError && state.text === before) {
+                try {
+                  await apply(editor, state, before);
+                } catch (applyError) {
+                  states.delete(editor);
+                  throw applyError;
+                }
+                throw error;
+              }
               if (!editCommitted) ring.restore(oldRing);
               states.delete(editor);
               throw error;

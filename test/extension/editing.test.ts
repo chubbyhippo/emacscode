@@ -49,6 +49,24 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.forwardChar');
     assert.equal(editor.selection.active.character, 1);
   });
+  it('Given a mark When character motion exceeds the buffer Then point reaches the boundary and the mark survives', async function () {
+    const position = new vscode.Position(0, 5);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit9');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [5, 10],
+    );
+    assert.equal(editor.document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.backwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [5, 9],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;
@@ -596,6 +614,7 @@ describe('emacscode editor behavior', function () {
       const clipboard = await vscode.env.clipboard.readText();
       try {
         await vscode.env.clipboard.writeText('emacscode region sentinel');
+        assert.equal(await vscode.env.clipboard.readText(), 'emacscode region sentinel');
         await vscode.commands.executeCommand(`emacscode.${command}`);
         assert.equal(editor.document.getText(), 'alpha beta');
         assert.equal(await vscode.env.clipboard.readText(), 'emacscode region sentinel');

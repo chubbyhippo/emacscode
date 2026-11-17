@@ -83,6 +83,28 @@ Feature: Emacs editing state
     When I move backward 1 character
     Then point is 1
 
+  Scenario Outline: Character motion reports buffer boundaries after partial movement
+    Given text "<text>" at position <start>
+    When I set the mark
+    And I try moving <count> characters
+    Then point is <end> and mark is <start>
+    And the region is active
+    And an error is reported
+    And the text is "<text>"
+    Examples:
+      | text    | start | count | end |
+      | abc     | 1     | 3     | 3   |
+      | abc     | 2     | -3    | 0   |
+      | a😀b    | 1     | 3     | 4   |
+      | a\r\nb | 1     | 3     | 4   |
+      |         | 0     | 1     | 0   |
+
+  Scenario: Overshooting character deletion keeps the existing clamped behavior
+    Given text "abc" at position 1
+    When I delete 9 characters
+    Then the text is "a"
+    And point is 1
+
   Scenario Outline: Combining marks remain attached during word motion
     Given text "<text>" at position <start>
     When I move forward 1 word
