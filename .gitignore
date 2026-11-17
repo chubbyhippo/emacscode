@@ -1,6 +1,8 @@
 node_modules/
 out/
 .build/
+.axet-code/
+test/inventory*.ts
 .vscode-test/
 .emacs-oracle/
 .emacs-setup-*/
