@@ -14,10 +14,13 @@
   ],
   "main": "./out/extension.js",
   "scripts": {
+    "setup:emacs": "node scripts/setup-emacs.js",
+    "precompile": "npm run setup:emacs",
     "compile": "tsc -p ./",
     "build:vsix": "npm run compile && npm exec --yes --package @vscode/vsce@4.1.1 -- vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
-    "test:core": "cucumber-js --require test/steps/**/*.js test/features/**/*.feature && node test/search-decorations.js",
+    "test:core": "cucumber-js --require test/steps/**/*.js test/features/**/*.feature && node test/search-decorations.js && node test/setup-emacs.js",
     "test:extension": "vscode-test",
+    "test:oracle": "npm run compile && node scripts/run-oracles.js",
     "test": "npm run compile && npm run test:core"
   },
   "contributes": {

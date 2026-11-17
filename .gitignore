@@ -1,6 +1,8 @@
 node_modules/
 out/
 .vscode-test/
+.emacs-oracle/
+.emacs-setup-*/
 *.vsix
 .idea/
 *.log
