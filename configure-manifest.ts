@@ -34,6 +34,8 @@ const bindings = [
   ['ctrl+k', 'killLine'],
   ['alt+d', 'killWord'],
   ['alt+backspace', 'backwardKillWord'],
+  ['alt+k', 'killSentence'],
+  ['ctrl+x backspace', 'backwardKillSentence'],
   ['alt+z', 'zapToChar'],
   ['alt+\\', 'deleteHorizontalSpace'],
   ['alt+space', 'cycleSpacing'],

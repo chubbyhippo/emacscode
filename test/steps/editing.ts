@@ -141,6 +141,13 @@ When('I move {int} sentences', function (count) {
     this.error = error;
   }
 });
+When('I kill {int} sentences', function (count) {
+  try {
+    this.state.killSentence(count);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I go to line {int}', function (line) {
   this.state.gotoLine(line);
 });

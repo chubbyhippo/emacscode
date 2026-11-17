@@ -619,6 +619,19 @@ export class EditorState {
     const end = this.wordPosition(count);
     return this.kill(this.point, end, count < 0 ? 'backward' : 'forward');
   }
+  public killSentence(count: number): string {
+    const origin = this.point;
+    const previous = this.previous;
+    try {
+      this.moveSentence(count);
+    } catch (error) {
+      this.done('other');
+      throw error;
+    }
+    const end = this.point;
+    this.previous = previous;
+    return this.kill(origin, end, end < origin ? 'backward' : 'forward');
+  }
   public zapToChar(character: string, count: number): string {
     if (Array.from(character).length !== 1 || !Number.isSafeInteger(count))
       throw new Error('Invalid zap character or count');

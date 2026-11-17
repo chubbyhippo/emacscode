@@ -172,6 +172,14 @@
         "title": "emacscode: backwardKillWord"
       },
       {
+        "command": "emacscode.killSentence",
+        "title": "emacscode: killSentence"
+      },
+      {
+        "command": "emacscode.backwardKillSentence",
+        "title": "emacscode: backwardKillSentence"
+      },
+      {
         "command": "emacscode.zapToChar",
         "title": "emacscode: zapToChar"
       },
@@ -469,6 +477,16 @@
       {
         "key": "alt+backspace",
         "command": "emacscode.backwardKillWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+k",
+        "command": "emacscode.killSentence",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x backspace",
+        "command": "emacscode.backwardKillSentence",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

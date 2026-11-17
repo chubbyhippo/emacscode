@@ -125,6 +125,56 @@ Feature: Emacs editing state
     When I move -1 sentences
     Then point is 10
 
+  @SC-kill-sentence-forward
+  Scenario: Consecutive sentence kills append and yank restores the text
+    Given text "One.  Two!  Three?" at position 0
+    When I kill 1 sentences
+    And I kill 1 sentences
+    Then the text is "  Three?"
+    And the newest kill is "One.  Two!"
+    When I yank
+    Then the text is "One.  Two!  Three?"
+
+  @SC-kill-sentence-backward
+  Scenario: Backward sentence kills prepend to the kill ring
+    Given text "One.  Two!  Three?" at position 18
+    When I kill -1 sentences
+    And I kill -1 sentences
+    Then the text is "One.  "
+    And the newest kill is "Two!  Three?"
+    And point is 6
+
+  @SC-kill-sentence-zero
+  Scenario: A zero sentence count preserves text and creates an empty kill
+    Given text "One.  Two." at position 2
+    When I add an older kill "older"
+    And I set the mark
+    And I kill 0 sentences
+    Then the text is "One.  Two."
+    And the kill ring contains "" then "older"
+    And the region is inactive
+
+  @SC-kill-sentence-error
+  Scenario: An oversized forward kill leaves text and ring unchanged after partial motion
+    Given text "One." at position 0
+    When I set the mark
+    And I add an older kill "older"
+    And I kill 2 sentences
+    Then an error is reported
+    And the text is "One."
+    And the newest kill is "older"
+    And point is 4 and mark is 0
+    And the region is active
+
+  @SC-kill-sentence-crlf
+  Scenario: Sentence killing and yanking preserve CRLF and Unicode
+    Given text "😀first.\r\nSecond." at position 0
+    When I kill 2 sentences
+    Then the text is ""
+    And the newest kill is "😀first.\r\nSecond."
+    When I yank
+    Then the text is "😀first.\r\nSecond."
+
   @SC-paragraph-motion
   Scenario: Move across paragraphs with an active mark and prefixes
     Given text "one\nline\n\ntwo\n\nthree" at position 1

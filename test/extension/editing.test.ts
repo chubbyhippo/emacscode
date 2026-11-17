@@ -237,6 +237,99 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(), 'One.  Two!  Three?');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given sentence kills Then the clipboard, yank and undo preserve CRLF and Unicode', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: '😀First.\nSecond.  Third.',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['alt+k', 'killSentence'],
+      ['ctrl+x backspace', 'backwardKillSentence'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === key &&
+            binding.command === `emacscode.${command}` &&
+            binding.when.includes('editorTextFocus') &&
+            binding.when.includes('!terminalFocus'),
+        ),
+      );
+    }
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.killSentence');
+      assert.equal(document.getText(), '  Third.');
+      assert.equal(await vscode.env.clipboard.readText(), '😀First.\r\nSecond.');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(document.getText(), '😀First.\r\nSecond.  Third.');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), '  Third.');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), '😀First.\r\nSecond.  Third.');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
+  it('Given a sentence kill beyond the end Then text, mark and clipboard survive and the prefix resets', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'One.',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.env.clipboard.writeText('sentence sentinel');
+      await vscode.commands.executeCommand('emacscode.setMark');
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.killSentence');
+      assert.equal(document.getText(), 'One.');
+      assert.equal(await vscode.env.clipboard.readText(), 'sentence sentinel');
+      assert.deepEqual(
+        [editor.selection.anchor.character, editor.selection.active.character],
+        [0, 4],
+      );
+      await vscode.commands.executeCommand('emacscode.backwardKillSentence');
+      assert.equal(document.getText(), '');
+      assert.equal(await vscode.env.clipboard.readText(), 'One.');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
+  it('Given a read-only sentence Then a rejected kill leaves the clipboard and existing ring intact', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-sentence-readonly',
+      {
+        provideTextDocumentContent: () => 'Protected sentence.  Next.',
+      },
+    );
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(await vscode.env.clipboard.readText(), 'alpha');
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-sentence-readonly:/text'),
+      );
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.killSentence');
+      assert.equal(document.getText(), 'Protected sentence.  Next.');
+      assert.equal(await vscode.env.clipboard.readText(), 'alpha');
+      const editable = await vscode.workspace.openTextDocument({
+        content: '',
+        language: 'plaintext',
+      });
+      editor = await vscode.window.showTextDocument(editable);
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editable.getText(), 'alpha');
+    } finally {
+      provider.dispose();
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given an active mark and a prefix When moving paragraphs Then selection and prefix follow point', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one\nline\n\ntwo\n\nthree',

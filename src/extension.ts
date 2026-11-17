@@ -239,6 +239,12 @@ export function activate(context: vscode.ExtensionContext): void {
     backwardKillWord: (state, count) => {
       state.killWord(-count);
     },
+    killSentence: (state, count) => {
+      state.killSentence(count);
+    },
+    backwardKillSentence: (state, count) => {
+      state.killSentence(-count);
+    },
     yank: (state, _count, _hasPrefix, lineEnding) => state.yank(lineEnding),
     yankPop: (state, count, _hasPrefix, lineEnding) => state.yankPop(count, lineEnding),
     deleteChar: (state, count, hasPrefix) => state.deleteCharacter(count, hasPrefix),

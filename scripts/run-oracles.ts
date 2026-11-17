@@ -12,6 +12,7 @@ const tests = [
   'goto-line-oracle.js',
   'paragraph-oracle.js',
   'sentence-oracle.js',
+  'kill-sentence-oracle.js',
   'mark-paragraph-oracle.js',
   'unicode-word-oracle.js',
   'combining-word-oracle.js',
