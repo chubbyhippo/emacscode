@@ -25,6 +25,45 @@ Feature: Emacs editing state
     When I set the mark and kill the region
     Then the text is "alpha beta"
 
+  Scenario Outline: An unset or inactive mark cannot kill or copy a line
+    Given text "alpha beta" at position 0
+    When I add an older kill "older"
+    And I try to <operation> the region
+    Then an error is reported
+    And the text is "alpha beta"
+    And the newest kill is "older"
+    Examples:
+      | operation |
+      | kill      |
+      | copy      |
+
+  Scenario Outline: A cancelled mark cannot kill or copy a line
+    Given text "alpha beta" at position 0
+    When I add an older kill "older"
+    And I set the mark
+    And I move forward 1 character
+    And I cancel the mark
+    And I try to <operation> the region
+    Then an error is reported
+    And the text is "alpha beta"
+    And the newest kill is "older"
+    Examples:
+      | operation |
+      | kill      |
+      | copy      |
+
+  Scenario Outline: An empty active region preserves text and stores an empty kill
+    Given text "alpha beta" at position 0
+    When I add an older kill "older"
+    And I set the mark
+    And I try to <operation> the region
+    Then the text is "alpha beta"
+    And the kill ring contains "" then "older"
+    Examples:
+      | operation |
+      | kill      |
+      | copy      |
+
   Scenario: Consecutive forward kills append and yank
     Given text "alpha beta" at position 0
     When I kill the next word twice

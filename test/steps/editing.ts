@@ -13,6 +13,9 @@ Given('a fresh prefix argument', function () { this.prefix = new PrefixArgument(
 When('I set the mark and move forward {int} characters', function (count) { this.state.setMark(); this.state.moveCharacter(count); });
 When('I exchange point and mark', function () { this.state.exchange(); });
 When('I set the mark and kill the region', function () { this.state.setMark(); this.state.region(); });
+When('I set the mark', function () { this.state.setMark(); });
+When('I cancel the mark', function () { this.state.cancel(); });
+When('I try to {word} the region', function (operation) { try { this.state.region(operation === 'copy'); } catch (error) { this.error = error; } });
 When('I kill the next word twice', function () { this.state.killWord(1); this.state.killWord(1); });
 When('I yank', function () { this.state.yank(); });
 When('I try yank pop', function () { try { this.state.yankPop(); } catch (error) { this.error = error; } });

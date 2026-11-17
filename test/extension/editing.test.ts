@@ -354,6 +354,28 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.document.getText(editor.selection), 'alpha beta');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  for (const command of ['killRegion', 'copyRegion']) {
+    it(`Given no active mark When ${command} runs Then text and clipboard remain unchanged`, async function () {
+      const clipboard = await vscode.env.clipboard.readText();
+      try {
+        await vscode.env.clipboard.writeText('emacscode region sentinel');
+        await vscode.commands.executeCommand(`emacscode.${command}`);
+        assert.equal(editor.document.getText(), 'alpha beta');
+        assert.equal(await vscode.env.clipboard.readText(), 'emacscode region sentinel');
+      } finally { await vscode.env.clipboard.writeText(clipboard); }
+    });
+    it(`Given an empty active region When ${command} runs Then no line is removed`, async function () {
+      const clipboard = await vscode.env.clipboard.readText();
+      try {
+        await vscode.env.clipboard.writeText('emacscode region sentinel');
+        await vscode.commands.executeCommand('emacscode.setMark');
+        await vscode.commands.executeCommand(`emacscode.${command}`);
+        assert.equal(editor.document.getText(), 'alpha beta');
+        assert.equal(editor.selection.active.character, 0);
+        assert.equal(await vscode.env.clipboard.readText(), '');
+      } finally { await vscode.env.clipboard.writeText(clipboard); }
+    });
+  }
   it('Given a mark When selecting and killing a word Then yank restores it', async function () {
     await vscode.commands.executeCommand('emacscode.setMark');
     await vscode.commands.executeCommand('emacscode.forwardWord');
