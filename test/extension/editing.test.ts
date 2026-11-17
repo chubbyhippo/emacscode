@@ -77,6 +77,28 @@ describe('emacscode editor behavior', function () {
       assert.equal(editor.selection.active.character, 5);
     });
   }
+  for (const [command, prefix, expected] of [
+    ['beginningOfLine', 2, [2, 0]],
+    ['endOfLine', 2, [2, 2]],
+    ['beginningOfLine', 0, [0, 0]],
+    ['endOfLine', 0, [0, 2]],
+    ['beginningOfLine', -2, [0, 0]],
+    ['endOfLine', -2, [0, 0]]
+  ] as [string, number, number[]][]) {
+    it(`Given prefix ${prefix} When invoking ${command} Then point and active mark follow Emacs line motion`, async function () {
+      const document = await vscode.workspace.openTextDocument({content:'aa\nbb\ncc',language:'plaintext'});
+      editor = await vscode.window.showTextDocument(document);
+      const position = new vscode.Position(1, 1);
+      editor.selection = new vscode.Selection(position, position);
+      await vscode.commands.executeCommand('emacscode.setMark');
+      if (prefix < 0) await vscode.commands.executeCommand('emacscode.negativeArgument');
+      await vscode.commands.executeCommand(`emacscode.digit${Math.abs(prefix)}`);
+      await vscode.commands.executeCommand(`emacscode.${command}`);
+      assert.deepEqual([editor.selection.active.line, editor.selection.active.character], expected);
+      assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [1, 1]);
+      await vscode.commands.executeCommand('emacscode.cancel');
+    });
+  }
   it('Given a negative prefix When downcasing Then point stays after the word', async function () {
     const document = await vscode.workspace.openTextDocument({content:'ONE TWO THREE',language:'plaintext'});
     editor = await vscode.window.showTextDocument(document);

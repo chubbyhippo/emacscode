@@ -174,6 +174,41 @@ Feature: Emacs editing state
     When I move to the beginning of the line
     Then point is 0
 
+  Scenario Outline: Numeric prefixes select a line boundary
+    Given text "aa\nbb\ncc" at position 4
+    When I move to the <boundary> of the line with prefix <count>
+    Then point is <point>
+    And the text is "aa\nbb\ncc"
+    Examples:
+      | boundary  | count | point |
+      | beginning | 1     | 3     |
+      | end       | 1     | 5     |
+      | beginning | 2     | 6     |
+      | end       | 2     | 8     |
+      | beginning | 0     | 0     |
+      | end       | 0     | 2     |
+      | beginning | -2    | 0     |
+      | end       | -2    | 0     |
+      | beginning | 9     | 6     |
+      | end       | 9     | 8     |
+
+  Scenario: Prefix line motion preserves CRLF boundaries
+    Given text "aa\r\nbb\r\ncc" at position 5
+    When I move to the end of the line with prefix 0
+    Then point is 2
+    When I move to the beginning of the line with prefix 2
+    Then point is 4
+
+  Scenario Outline: Move from the second line to an empty first line
+    Given text "<text>" at position <start>
+    When I move up 1 line
+    Then point is 0
+    And the text is "<text>"
+    Examples:
+      | text    | start |
+      | \nx     | 1     |
+      | \r\nx   | 2     |
+
   Scenario: Consecutive backwards kills prepend
     Given text "alpha beta" at position 10
     When I kill the previous word twice

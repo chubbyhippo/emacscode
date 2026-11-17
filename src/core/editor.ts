@@ -70,7 +70,25 @@ export class EditorState {
     }
     this.point = position; this.done('move');
   }
-  public lineBoundary(end: boolean): void { const before = this.point === 0 ? -1 : this.text.lastIndexOf('\n', this.point - 1); const after = this.text.indexOf('\n', this.point); this.point = end ? (after < 0 ? this.text.length : after > 0 && this.text[after - 1] === '\r' ? after - 1 : after) : before + 1; this.done('move'); }
+  public lineBoundary(end: boolean, count = 1): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid line count');
+    let lineStart = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
+    let remaining = count - 1;
+    while (remaining > 0) {
+      const next = this.text.indexOf('\n', lineStart);
+      if (next < 0) break;
+      lineStart = next + 1;
+      remaining--;
+    }
+    while (remaining < 0) {
+      if (lineStart === 0) { this.point = 0; this.done('move'); return; }
+      lineStart = lineStart <= 1 ? 0 : this.text.lastIndexOf('\n', lineStart - 2) + 1;
+      remaining++;
+    }
+    const newline = this.text.indexOf('\n', lineStart);
+    this.point = !end ? lineStart : newline < 0 ? this.text.length : newline > lineStart && this.text[newline - 1] === '\r' ? newline - 1 : newline;
+    this.done('move');
+  }
   public backToIndentation(): void {
     let position = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
     while (position < this.text.length && /[ \t\f\v]/.test(this.text[position])) position++;
@@ -83,7 +101,7 @@ export class EditorState {
     let lineStart = start;
     for (let index = 0; index < Math.abs(count); index++) {
       if (count > 0) { const end = this.text.indexOf('\n', lineStart); if (end < 0) { this.point = this.text.length; this.goalColumn = goal; this.done('vertical'); return; } lineStart = end + 1; }
-      else { if (lineStart === 0) { this.point = 0; this.goalColumn = goal; this.done('vertical'); return; } lineStart = this.text.lastIndexOf('\n', lineStart - 2) + 1; }
+      else { if (lineStart === 0) { this.point = 0; this.goalColumn = goal; this.done('vertical'); return; } lineStart = lineStart <= 1 ? 0 : this.text.lastIndexOf('\n', lineStart - 2) + 1; }
     }
     const end = this.text.indexOf('\n', lineStart);
     const lineEnd = end < 0 ? this.text.length : end > lineStart && this.text[end - 1] === '\r' ? end - 1 : end;

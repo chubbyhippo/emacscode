@@ -26,8 +26,10 @@ When('I enter the universal argument twice', function () { this.prefix.universal
 When('I enter negative digits {int} and {int}', function (first, second) { this.prefix.negative(); this.prefix.digit(first); this.prefix.digit(second); });
 When('I move to the beginning of the line', function () { this.state.lineBoundary(false); });
 When('I move to the end of the line', function () { this.state.lineBoundary(true); });
+When('I move to the {word} of the line with prefix {int}', function (boundary, count) { this.state.lineBoundary(boundary === 'end', count); });
 When('I move forward {int} character', function (count) { this.state.moveCharacter(count); });
 When('I move down {int} line', function (count) { this.state.vertical(count); });
+When('I move up {int} line', function (count) { this.state.vertical(-count); });
 When('I add an older kill {string}', function (text) { this.ring.add(unescape(text), 'forward', false); });
 When('I move to indentation', function () { this.state.backToIndentation(); });
 When('I mark a word', function () { this.state.markWord(1, false); });
