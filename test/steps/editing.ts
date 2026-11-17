@@ -131,6 +131,9 @@ When('I move forward {int} word', function (count) {
 When('I move backward {int} word', function (count) {
   this.state.moveWord(-count);
 });
+When('I move {int} paragraphs', function (count) {
+  this.state.moveParagraph(count);
+});
 When('I try moving forward a word', function () {
   try {
     this.state.moveWord(1);
@@ -152,6 +155,13 @@ When('I add an older kill {string}', function (text) {
 });
 When('I move to indentation', function () {
   this.state.backToIndentation();
+});
+When('I mark a paragraph with count {int}', function (count) {
+  try {
+    this.state.markParagraph(count);
+  } catch (error) {
+    this.error = error;
+  }
 });
 When('I mark a word', function () {
   this.state.markWord(1, false);

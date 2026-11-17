@@ -6,6 +6,12 @@ export class CharacterBoundaryError extends Error {
   }
 }
 
+export class MarkParagraphError extends Error {
+  constructor() {
+    super('Cannot mark zero paragraphs');
+  }
+}
+
 export class CharacterDeletionRangeError extends Error {
   public readonly code = 'args-out-of-range';
   constructor() {
@@ -396,6 +402,23 @@ export class EditorState {
     }
     this.point = position;
     this.done('move');
+  }
+  public markParagraph(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid paragraph count');
+    if (count === 0) throw new MarkParagraphError();
+    if (this.mark !== undefined && (this.active || this.previous === 'mark-paragraph')) {
+      const origin = this.point;
+      this.point = this.mark;
+      this.moveParagraph(count);
+      this.mark = this.point;
+      this.point = origin;
+    } else {
+      this.moveParagraph(count);
+      this.mark = this.point;
+      this.moveParagraph(-count);
+    }
+    this.active = true;
+    this.done('mark-paragraph');
   }
   public markWord(count: number, hasPrefix: boolean): void {
     const extend = this.mark !== undefined && (this.active || this.previous === 'mark-word');

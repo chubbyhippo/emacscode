@@ -4,6 +4,7 @@ import {
   CharacterDeletionRangeError,
   EditorState,
   KillRing,
+  MarkParagraphError,
   PrefixArgument,
 } from './core/editor';
 import { SearchController } from './search';
@@ -173,7 +174,8 @@ export function activate(context: vscode.ExtensionContext): void {
             } catch (error) {
               if (
                 (error instanceof CharacterBoundaryError ||
-                  error instanceof CharacterDeletionRangeError) &&
+                  error instanceof CharacterDeletionRangeError ||
+                  error instanceof MarkParagraphError) &&
                 state.text === before
               ) {
                 try {
@@ -208,6 +210,8 @@ export function activate(context: vscode.ExtensionContext): void {
     backToIndentation: (state) => state.backToIndentation(),
     backwardWord: (state, count) => state.moveWord(-count),
     forwardWord: (state, count) => state.moveWord(count),
+    backwardParagraph: (state, count) => state.moveParagraph(-count),
+    forwardParagraph: (state, count) => state.moveParagraph(count),
     upcaseWord: (state, count) => state.changeWordCase('upcase', count),
     downcaseWord: (state, count) => state.changeWordCase('downcase', count),
     capitalizeWord: (state, count) => state.changeWordCase('capitalize', count),
@@ -215,6 +219,7 @@ export function activate(context: vscode.ExtensionContext): void {
     endOfBuffer: (state) => state.bufferBoundary(true),
     setMark: (state) => state.setMark(),
     markWord: (state, count, hasPrefix) => state.markWord(count, hasPrefix),
+    markParagraph: (state, count) => state.markParagraph(count),
     exchangePointAndMark: (state) => state.exchange(),
     markWholeBuffer: (state) => state.selectAll(),
     killRegion: (state) => {

@@ -78,6 +78,46 @@ Feature: Emacs editing state
     Then an error is reported
     And the text is "alpha"
 
+  @SC-paragraph-motion
+  Scenario: Move across paragraphs with an active mark and prefixes
+    Given text "one\nline\n\ntwo\n\nthree" at position 1
+    When I set the mark
+    And I move 2 paragraphs
+    Then point is 14 and mark is 1
+    And the region is active
+    When I move -1 paragraphs
+    Then point is 9 and mark is 1
+    And the region is active
+
+  @SC-mark-paragraph
+  Scenario: Mark a paragraph and extend the mark by another paragraph
+    Given text "one\n\ntwo\n\nthree" at position 1
+    When I mark a paragraph with count 1
+    Then point is 0 and mark is 4
+    And the region is active
+    When I mark a paragraph with count 1
+    Then point is 0 and mark is 9
+    And the region is active
+
+  @SC-mark-paragraph-zero
+  Scenario: A zero prefix reports an error and preserves the active region
+    Given text "one\n\ntwo" at position 1
+    When I set the mark
+    And I mark a paragraph with count 0
+    Then an error is reported
+    And point is 1 and mark is 1
+    And the region is active
+    And the text is "one\n\ntwo"
+
+  @SC-paragraph-crlf
+  Scenario: Paragraph movement preserves CRLF and supplementary characters
+    Given text "😀one\r\n\r\ntwo" at position 0
+    When I move 1 paragraphs
+    Then point is 7
+    And the text is "😀one\r\n\r\ntwo"
+    When I move -1 paragraphs
+    Then point is 0
+
   Scenario: Backward character respects surrogate pairs
     Given text "a😀b" at position 3
     When I move backward 1 character

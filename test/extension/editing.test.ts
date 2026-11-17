@@ -184,6 +184,55 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'a\r\nb');
   });
+  it('Given an active mark and a prefix When moving paragraphs Then selection and prefix follow point', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\nline\n\ntwo\n\nthree',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['alt+shift+[', 'backwardParagraph'],
+      ['alt+shift+]', 'forwardParagraph'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) => binding.key === key && binding.command === `emacscode.${command}`,
+        ),
+      );
+    }
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.forwardParagraph');
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.active.line], [0, 4]);
+    await vscode.commands.executeCommand('emacscode.backwardParagraph');
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.active.line], [0, 2]);
+    assert.equal(document.getText(), 'one\nline\n\ntwo\n\nthree');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
+  it('Given a paragraph When marking repeatedly and rejecting zero Then selection survives and extends', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\n\ntwo\n\nthree',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) => binding.key === 'alt+h' && binding.command === 'emacscode.markParagraph',
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.markParagraph');
+    assert.equal(document.getText(editor.selection), 'one\n');
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.markParagraph');
+    assert.equal(document.getText(editor.selection), 'one\n');
+    await vscode.commands.executeCommand('emacscode.markParagraph');
+    assert.equal(document.getText(editor.selection), 'one\n\ntwo\n');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;

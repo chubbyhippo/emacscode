@@ -88,6 +88,14 @@
         "title": "emacscode: forwardWord"
       },
       {
+        "command": "emacscode.backwardParagraph",
+        "title": "emacscode: backwardParagraph"
+      },
+      {
+        "command": "emacscode.forwardParagraph",
+        "title": "emacscode: forwardParagraph"
+      },
+      {
         "command": "emacscode.upcaseWord",
         "title": "emacscode: upcaseWord"
       },
@@ -118,6 +126,10 @@
       {
         "command": "emacscode.markWord",
         "title": "emacscode: markWord"
+      },
+      {
+        "command": "emacscode.markParagraph",
+        "title": "emacscode: markParagraph"
       },
       {
         "command": "emacscode.exchangePointAndMark",
@@ -322,6 +334,16 @@
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
+        "key": "alt+shift+[",
+        "command": "emacscode.backwardParagraph",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+]",
+        "command": "emacscode.forwardParagraph",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
         "key": "alt+u",
         "command": "emacscode.upcaseWord",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
@@ -359,6 +381,11 @@
       {
         "key": "alt+shift+2",
         "command": "emacscode.markWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+h",
+        "command": "emacscode.markParagraph",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
