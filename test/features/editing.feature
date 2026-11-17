@@ -78,6 +78,20 @@ Feature: Emacs editing state
     Then an error is reported
     And the text is "alpha"
 
+  @SC-goto-line
+  Scenario Outline: Go to numbered lines while retaining an active mark
+    Given text "one\r\ntwo\r\nthree" at position 1
+    When I set the mark
+    And I go to line <line>
+    Then point is <point> and mark is 1
+    And the region is active
+    And the text is "one\r\ntwo\r\nthree"
+    Examples:
+      | line | point |
+      | 0    | 0     |
+      | 2    | 5     |
+      | 9    | 15    |
+
   @SC-paragraph-motion
   Scenario: Move across paragraphs with an active mark and prefixes
     Given text "one\nline\n\ntwo\n\nthree" at position 1

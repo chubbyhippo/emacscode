@@ -233,6 +233,28 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(editor.selection), 'one\n\ntwo\n');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given a line prefix and active mark When going to a line Then the selection follows point', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\ntwo\nthree',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const key of ['alt+g g', 'alt+g alt+g']) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) => binding.key === key && binding.command === 'emacscode.gotoLine',
+        ),
+      );
+    }
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.gotoLine');
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.active.line], [0, 1]);
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.equal(editor.selection.active.character, 1);
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;

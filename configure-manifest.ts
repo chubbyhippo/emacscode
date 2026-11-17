@@ -14,6 +14,8 @@ const bindings = [
   ['alt+f', 'forwardWord'],
   ['alt+shift+[', 'backwardParagraph'],
   ['alt+shift+]', 'forwardParagraph'],
+  ['alt+g g', 'gotoLine'],
+  ['alt+g alt+g', 'gotoLine'],
   ['alt+u', 'upcaseWord'],
   ['alt+l', 'downcaseWord'],
   ['alt+c', 'capitalizeWord'],

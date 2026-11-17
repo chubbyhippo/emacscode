@@ -9,6 +9,7 @@ const tests = [
   'delete-character-oracle.js',
   'backward-delete-oracle.js',
   'line-boundary-oracle.js',
+  'goto-line-oracle.js',
   'paragraph-oracle.js',
   'mark-paragraph-oracle.js',
   'unicode-word-oracle.js',

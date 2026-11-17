@@ -237,6 +237,20 @@ export class EditorState {
     this.point = end ? this.text.length : 0;
     this.done('move');
   }
+  public gotoLine(line: number): void {
+    if (!Number.isSafeInteger(line)) throw new Error('Invalid line number');
+    let position = 0;
+    for (let index = 1; index < line; index++) {
+      const newline = this.text.indexOf('\n', position);
+      if (newline < 0) {
+        position = this.text.length;
+        break;
+      }
+      position = newline + 1;
+    }
+    this.point = position;
+    this.done('move');
+  }
   public vertical(count: number): void {
     const start = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
     const goal = this.goalColumn ?? this.point - start;

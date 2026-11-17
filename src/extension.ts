@@ -260,6 +260,50 @@ export function activate(context: vscode.ExtensionContext): void {
   };
   for (const [name, action] of Object.entries(actions)) register(name, action);
   context.subscriptions.push(
+    vscode.commands.registerCommand('emacscode.gotoLine', async (supplied?: number) => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      const version = editor.document.version;
+      const selections = editor.selections.slice();
+      const hasPrefix = prefix.pending;
+      const count = prefix.consume();
+      void contextUpdate();
+      const valid = (value: string): boolean =>
+        /^[+-]?\d+$/.test(value.trim()) && Number.isSafeInteger(Number(value.trim()));
+      const input =
+        supplied !== undefined || hasPrefix
+          ? String(supplied ?? count)
+          : await vscode.window.showInputBox({
+              prompt: 'Go to line',
+              validateInput: (value) => (valid(value) ? undefined : 'Enter a whole line number'),
+            });
+      if (input === undefined) return;
+      if (!valid(input)) {
+        void vscode.window.showWarningMessage('emacscode: invalid line number');
+        return;
+      }
+      queue = queue
+        .then(async () => {
+          if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+            throw new Error('The original editor is no longer active');
+          if (selections.length !== 1 || editor.selections.length !== 1)
+            throw new Error('emacscode supports one cursor at a time');
+          if (editor.document.version !== version || !editor.selection.isEqual(selections[0]))
+            throw new Error('Document or selection changed while choosing a line');
+          const state = stateFor(editor);
+          const before = state.text;
+          state.gotoLine(Number(input));
+          await apply(editor, state, before);
+        })
+        .catch((error) => {
+          void vscode.window.showWarningMessage(
+            `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      return queue;
+    }),
+  );
+  context.subscriptions.push(
     vscode.commands.registerCommand('emacscode.zapToChar', async (supplied?: string) => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) return;

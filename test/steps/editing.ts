@@ -134,6 +134,9 @@ When('I move backward {int} word', function (count) {
 When('I move {int} paragraphs', function (count) {
   this.state.moveParagraph(count);
 });
+When('I go to line {int}', function (line) {
+  this.state.gotoLine(line);
+});
 When('I try moving forward a word', function () {
   try {
     this.state.moveWord(1);
