@@ -427,6 +427,29 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'leftright');
   });
+  it('Given CRLF text and a prefix When joining lines Then undo restores them', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\n  two',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) =>
+          binding.key === 'alt+shift+6' && binding.command === 'emacscode.deleteIndentation',
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.deleteIndentation');
+    assert.equal(document.getText(), 'one two');
+    assert.equal(editor.selection.active.character, 3);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one\r\n  two');
+  });
   it('Given blank lines When deleting them Then CRLF and undo are preserved', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one\n\n\ntwo',

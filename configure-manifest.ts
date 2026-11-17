@@ -33,6 +33,7 @@ const bindings = [
   ['alt+z', 'zapToChar'],
   ['alt+\\', 'deleteHorizontalSpace'],
   ['alt+space', 'cycleSpacing'],
+  ['alt+shift+6', 'deleteIndentation'],
   ['ctrl+y', 'yank'],
   ['alt+y', 'yankPop'],
   ['ctrl+d', 'deleteChar'],

@@ -725,6 +725,58 @@ export class EditorState {
     if (this.text !== originalText) this.active = false;
     this.done('delete');
   }
+  public deleteIndentation(hasPrefix: boolean): void {
+    const lineStart = (position: number): number =>
+      position === 0 ? 0 : this.text.lastIndexOf('\n', position - 1) + 1;
+    const lineEnd = (position: number): number => {
+      const newline = this.text.indexOf('\n', position);
+      return newline < 0
+        ? this.text.length
+        : newline > 0 && this.text[newline - 1] === '\r'
+          ? newline - 1
+          : newline;
+    };
+    let begin: number;
+    if (!hasPrefix && this.active && this.mark !== undefined && this.mark !== this.point) {
+      begin = Math.min(this.point, this.mark);
+      const end = Math.max(this.point, this.mark);
+      this.point = end > lineEnd(begin) ? end : begin;
+    } else {
+      const start = lineStart(this.point);
+      const next = this.text.indexOf('\n', start);
+      begin = (hasPrefix ? (next >= 0 ? next + 1 : this.text.length) : start) - 1;
+      if (hasPrefix && next >= 0) this.point = next + 1;
+      else if (hasPrefix) this.point = this.text.length;
+      else this.point = start;
+    }
+    while (lineStart(this.point) > begin && lineStart(this.point) > 0) {
+      const current = lineStart(this.point);
+      const newlineStart =
+        current > 1 && this.text[current - 2] === '\r' ? current - 2 : current - 1;
+      this.replace(newlineStart, current, '');
+      let left = this.point;
+      let right = this.point;
+      while (left > 0 && (this.text[left - 1] === ' ' || this.text[left - 1] === '\t')) left--;
+      while (right < this.text.length && (this.text[right] === ' ' || this.text[right] === '\t'))
+        right++;
+      const before = this.text[left - 1];
+      const after = this.text[right];
+      const space =
+        before &&
+        after &&
+        before !== '\n' &&
+        after !== '\r' &&
+        after !== '\n' &&
+        !/[([{']/u.test(before) &&
+        !/[)\]}]/u.test(after)
+          ? ' '
+          : '';
+      if (left !== right || space) this.replace(left, right, space);
+      this.point = left;
+    }
+    this.active = false;
+    this.done('delete');
+  }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point;
     let end = this.point;

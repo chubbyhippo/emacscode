@@ -22,6 +22,7 @@ const tests = [
   'whitespace-oracle.js',
   'cycle-spacing-oracle.js',
   'delete-blank-lines-oracle.js',
+  'delete-indentation-oracle.js',
   'indentation-oracle.js',
   'mark-word-oracle.js',
   'kill-line-oracle.js',

@@ -591,6 +591,30 @@ Feature: Emacs editing state
     Then the text is "😀ab"
     And point is 3
 
+  @SC-delete-indentation
+  Scenario: Join the current line to the preceding line
+    Given text "one  \n  two" at position 8
+    When I join lines with prefix 0
+    Then the text is "one two"
+    And point is 3
+
+  @SC-delete-indentation-prefix
+  Scenario: A prefix joins the following line across CRLF
+    Given text "one\r\n  two" at position 1
+    When I join lines with prefix 1
+    Then the text is "one two"
+    And point is 3
+
+  @SC-delete-indentation-region
+  Scenario: Join all lines in an active region
+    Given text "one\ntwo\nthree" at position 0
+    When I set the mark
+    And I move forward 13 character
+    And I join lines with prefix 0
+    Then the text is "one two three"
+    And point is 3
+    And the region is inactive
+
   @SC-delete-blank-lines
   Scenario: Delete blank lines following a nonblank line
     Given text "one\n\n\ntwo" at position 1

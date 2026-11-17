@@ -245,6 +245,7 @@ export function activate(context: vscode.ExtensionContext): void {
     deleteHorizontalSpace: (state, _count, hasPrefix) => state.deleteHorizontalSpace(hasPrefix),
     cycleSpacing: (state, count, hasPrefix) => state.cycleSpacing(hasPrefix ? count : undefined),
     deleteBlankLines: (state) => state.deleteBlankLines(),
+    deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
     openLine: (state, count, _hasPrefix, lineEnding) => {
       const origin = state.point;

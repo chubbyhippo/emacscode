@@ -199,6 +199,9 @@ When('I transpose characters with count {int}', function (count) {
     this.error = error;
   }
 });
+When('I join lines with prefix {int}', function (prefix) {
+  this.state.deleteIndentation(prefix !== 0);
+});
 When('I delete blank lines', function () {
   this.state.deleteBlankLines();
 });

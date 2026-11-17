@@ -172,6 +172,10 @@
         "title": "emacscode: cycleSpacing"
       },
       {
+        "command": "emacscode.deleteIndentation",
+        "title": "emacscode: deleteIndentation"
+      },
+      {
         "command": "emacscode.yank",
         "title": "emacscode: yank"
       },
@@ -444,6 +448,11 @@
       {
         "key": "alt+space",
         "command": "emacscode.cycleSpacing",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+6",
+        "command": "emacscode.deleteIndentation",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
