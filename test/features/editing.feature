@@ -83,6 +83,40 @@ Feature: Emacs editing state
     When I move backward 1 character
     Then point is 1
 
+  Scenario Outline: Combining marks remain attached during word motion
+    Given text "<text>" at position <start>
+    When I move forward 1 word
+    Then point is <end>
+    When I move backward 1 word
+    Then point is <beginning>
+    Examples:
+      | text       | start | end | beginning |
+      | éCOLE fin | 0     | 6   | 0         |
+      | éCOLE fin | 1     | 6   | 0         |
+      | क्‍ष fin    | 0     | 2   | 0         |
+      | ́abc fin   | 0     | 4   | 1         |
+      | a𞀀b fin   | 0     | 4   | 0         |
+
+  Scenario: Killing a decomposed word preserves its combining mark
+    Given text "école fin" at position 0
+    When I kill the next word
+    Then the text is " fin"
+    And the newest kill is "école"
+    When I yank
+    Then the text is "école fin"
+
+  Scenario: Capitalizing a decomposed word does not capitalize after the mark
+    Given text "éCOLE fin" at position 0
+    When I capitalize 1 words
+    Then the text is "École fin"
+    And point is 6
+
+  Scenario: Capitalization starting before an attached mark continues the existing word
+    Given text "éCOLE fin" at position 1
+    When I capitalize 1 words
+    Then the text is "école fin"
+    And point is 6
+
   Scenario: Word movement preserves supplementary letters
     Given text "a𐐀b c" at position 0
     When I move forward 1 word

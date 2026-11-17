@@ -117,6 +117,19 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), ' c');
     } finally { await vscode.env.clipboard.writeText(clipboard); }
   });
+  it('Given a decomposed word When moving, capitalizing and undoing Then combining marks remain attached', async function () {
+    const document = await vscode.workspace.openTextDocument({content:'éCOLE fin',language:'plaintext'});
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.forwardWord');
+    assert.equal(editor.selection.active.character, 6);
+    await vscode.commands.executeCommand('emacscode.backwardWord');
+    assert.equal(editor.selection.active.character, 0);
+    await vscode.commands.executeCommand('emacscode.capitalizeWord');
+    assert.equal(document.getText(), 'École fin');
+    assert.equal(editor.selection.active.character, 6);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'éCOLE fin');
+  });
   it('Given a negative prefix When downcasing Then point stays after the word', async function () {
     const document = await vscode.workspace.openTextDocument({content:'ONE TWO THREE',language:'plaintext'});
     editor = await vscode.window.showTextDocument(document);

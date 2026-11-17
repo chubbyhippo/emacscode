@@ -117,15 +117,41 @@ export class EditorState {
     if (isSplitSurrogate(pos)) throw new Error('Point is not at a character boundary');
     const next = (offset: number): number => offset + String.fromCodePoint(this.text.codePointAt(offset)!).length;
     const previous = (offset: number): number => isSplitSurrogate(offset - 1) ? offset - 2 : offset - 1;
-    const wordAt = (offset: number): boolean => this.isWord(String.fromCodePoint(this.text.codePointAt(offset)!));
+    const characterAt = (offset: number): string => String.fromCodePoint(this.text.codePointAt(offset)!);
+    const wordAt = (offset: number): boolean => this.isWord(characterAt(offset));
+    const markAt = (offset: number): boolean => /\p{M}/u.test(characterAt(offset));
     for (let index = 0; index < Math.abs(count); index++) {
       if (count > 0) {
-        while (pos < this.text.length && !wordAt(pos)) pos = next(pos);
-        while (pos < this.text.length && wordAt(pos)) pos = next(pos);
+        let inWord = false;
+        if (pos < this.text.length && markAt(pos)) {
+          let base = pos;
+          while (base > 0 && markAt(base)) base = previous(base);
+          inWord = wordAt(base);
+        }
+        while (!inWord && pos < this.text.length && !wordAt(pos)) pos = next(pos);
+        while (pos < this.text.length && (wordAt(pos) || markAt(pos))) pos = next(pos);
         if (pos === this.text.length) break;
       } else {
-        while (pos > 0 && !wordAt(previous(pos))) pos = previous(pos);
-        while (pos > 0 && wordAt(previous(pos))) pos = previous(pos);
+        while (pos > 0) {
+          const candidate = previous(pos);
+          if (wordAt(candidate)) { pos = candidate; break; }
+          if (markAt(candidate)) {
+            let base = candidate;
+            while (base > 0 && markAt(base)) base = previous(base);
+            if (wordAt(base)) { pos = base; break; }
+            pos = candidate;
+          } else pos = candidate;
+        }
+        while (pos > 0) {
+          const candidate = previous(pos);
+          if (wordAt(candidate)) { pos = candidate; continue; }
+          if (markAt(candidate)) {
+            let base = candidate;
+            while (base > 0 && markAt(base)) base = previous(base);
+            if (wordAt(base)) { pos = base; continue; }
+          }
+          break;
+        }
         if (pos === 0) break;
       }
     }
@@ -147,7 +173,10 @@ export class EditorState {
     const boundary = this.wordPosition(boundedCount);
     const start = Math.min(origin, boundary); const end = Math.max(origin, boundary);
     const original = this.text.slice(start, end);
-    const converted = kind === 'upcase' ? original.toUpperCase() : kind === 'downcase' ? original.toLowerCase() : original.replace(/[\p{L}\p{N}]+/gu, word => {
+    const prefix = this.text.slice(0, start);
+    const continuesWord = /[\p{L}\p{N}]\p{M}*$/u.test(prefix) && /^\p{M}/u.test(original);
+    const converted = kind === 'upcase' ? original.toUpperCase() : kind === 'downcase' ? original.toLowerCase() : original.replace(/[\p{L}\p{N}][\p{L}\p{N}\p{M}]*/gu, (word, offset: number) => {
+      if (continuesWord && /^\p{M}+$/u.test(original.slice(0, offset))) return word.toLowerCase();
       const characters = Array.from(word);
       return characters[0].toUpperCase() + characters.slice(1).join('').toLowerCase();
     });
