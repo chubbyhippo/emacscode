@@ -14,14 +14,19 @@
   ],
   "main": "./out/extension.js",
   "scripts": {
-    "setup:emacs": "node scripts/setup-emacs.js",
+    "prepare": "husky",
+    "lint": "eslint .vscode-test.mts configure-manifest.ts src scripts test",
+    "compile:tools": "tsc -p tsconfig.tools.json",
+    "setup:emacs": "npm run compile:tools && node .build/scripts/setup-emacs.js",
     "precompile": "npm run setup:emacs",
     "compile": "tsc -p ./",
+    "inventory": "npm run compile:tools && node .build/test/inventory.js",
+    "configure:manifest": "npm run compile:tools && node .build/configure-manifest.js",
     "build:vsix": "npm run compile && npm exec --yes --package @vscode/vsce@4.1.1 -- vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
-    "test:core": "cucumber-js --require test/steps/**/*.js test/features/**/*.feature && node test/search-decorations.js && node test/setup-emacs.js",
-    "test:extension": "vscode-test",
-    "test:oracle": "npm run compile && node scripts/run-oracles.js",
-    "test": "npm run compile && npm run test:core"
+    "test:core": "npm run compile && cucumber-js --require .build/test/steps/**/*.js test/features/**/*.feature && node .build/test/search-decorations.js && node .build/test/setup-emacs.js",
+    "test:extension": "npm run compile && vscode-test --config .build/.vscode-test.mjs",
+    "test:oracle": "npm run compile && node .build/scripts/run-oracles.js",
+    "test": "npm run test:core"
   },
   "contributes": {
     "configurationDefaults": {
@@ -805,12 +810,16 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "^13.3.0",
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.0",
     "@types/vscode": "^1.90.0",
-    "typescript": "^5.9.2",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^2.5.2",
-    "@types/mocha": "^10.0.10",
-    "mocha": "^11.7.0"
+    "eslint": "^10.15.0",
+    "husky": "^9.1.7",
+    "mocha": "^11.7.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.73.0"
   }
 }

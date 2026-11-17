@@ -1,4 +1,5 @@
-const { execFileSync } = require('node:child_process');
+import { execFileSync, type ExecFileSyncOptions } from 'node:child_process';
+import type { IncomingMessage } from 'node:http';
 const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
@@ -7,7 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { pipeline } = require('node:stream/promises');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '../..');
 const installPath = path.join(root, '.emacs-oracle');
 const windowsArchive = {
   url: 'https://ftp.gnu.org/gnu/emacs/windows/emacs-31/emacs-31.1_1.zip',
@@ -20,13 +21,13 @@ const sourceArchive = {
   name: 'emacs.tar.gz'
 };
 
-function validate(binary) {
+export function validate(binary: string): string {
   const version = execFileSync(binary, ['--version'], { encoding: 'utf8', timeout: 15000 });
   if (!/^GNU Emacs 31\.1(?:\s|$)/.test(version)) throw new Error(`Expected GNU Emacs 31.1: ${binary}`);
   return binary;
 }
 
-function download(url, redirects = 0) {
+function download(url: string | URL, redirects = 0): Promise<IncomingMessage> {
   if (redirects > 5) return Promise.reject(new Error('Too many Emacs download redirects'));
   return new Promise((resolve, reject) => {
     const request = https.get(url, response => {
@@ -49,17 +50,17 @@ function download(url, redirects = 0) {
   });
 }
 
-async function hashFile(file) {
+async function hashFile(file: string): Promise<string> {
   const hash = createHash('sha256');
   for await (const chunk of fs.createReadStream(file)) hash.update(chunk);
   return hash.digest('hex');
 }
 
-function buildSource(archive, staging, target, platform, run = execFileSync) {
+export function buildSource(archive: string, staging: string, target: string, platform: string, run: (command: string, args: string[], options: ExecFileSyncOptions) => unknown = execFileSync): string {
   const source = path.join(staging, 'emacs-31.1');
   const destination = path.join(staging, 'install');
   const installed = path.join(destination, target.slice(path.parse(target).root.length));
-  const options = { cwd: source, stdio: 'inherit', timeout: 3600000 };
+  const options: ExecFileSyncOptions = { cwd: source, stdio: 'inherit', timeout: 3600000 };
   run('tar', ['-xzf', archive, '-C', staging], { stdio: 'inherit', timeout: 600000 });
   const configure = [`--prefix=${target}`, '--without-all', '--without-x'];
   if (platform === 'darwin') configure.push('--without-ns');
@@ -69,7 +70,7 @@ function buildSource(archive, staging, target, platform, run = execFileSync) {
   return installed;
 }
 
-async function setup(options = {}) {
+export async function setup(options: { target?: string; archive?: string; ignoreOverride?: boolean; required?: boolean } = {}): Promise<string | undefined> {
   const target = path.resolve(options.target || installPath);
   const binary = path.join(target, 'bin', process.platform === 'win32' ? 'emacs.exe' : 'emacs');
   if (process.env.EMACS_ORACLE && !options.ignoreOverride) {
@@ -130,4 +131,4 @@ async function setup(options = {}) {
 }
 
 if (require.main === module) setup().catch(error => { console.error(`Emacs setup failed: ${error.message}`); process.exitCode = 1; });
-module.exports = { setup, validate, installPath, buildSource };
+export { installPath };

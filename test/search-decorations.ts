@@ -2,12 +2,13 @@ const assert = require('node:assert/strict');
 const Module = require('node:module');
 const originalLoad = Module._load;
 const decorations = [];
-const listeners = {};
-class Position { constructor(offset) { this.offset = offset; } }
-class Range { constructor(start, end) { this.start = start; this.end = end; } }
-class Selection extends Range { constructor(anchor, active) { super(anchor, active); this.anchor = anchor; this.active = active; } }
+const listeners: Record<string, (...args: any[]) => void> = {};
+class Position { constructor(public offset: number) {} }
+class Range { constructor(public start: Position, public end: Position) {} }
+class Selection extends Range { constructor(public anchor: Position, public active: Position) { super(anchor, active); } }
 const input = {
   value: '',
+  title: '',
   onDidChangeValue: callback => { listeners.change = callback; return { dispose() {} }; },
   onDidAccept: callback => { listeners.accept = callback; return { dispose() {} }; },
   onDidHide: callback => { listeners.hide = callback; return { dispose() {} }; },
@@ -20,10 +21,10 @@ const vscode = {
   window: { createInputBox: () => input, createTextEditorDecorationType: options => { const decoration = { color: options.backgroundColor.id, disposed: false, dispose() { this.disposed = true; } }; decorations.push(decoration); return decoration; }, onDidChangeActiveTextEditor: () => ({ dispose() {} }), showWarningMessage() {} },
   workspace: { onDidChangeTextDocument: () => ({ dispose() {} }) },
   commands: { executeCommand: () => Promise.resolve() },
-  ThemeColor: class { constructor(id) { this.id = id; } }, Range, Selection
+  ThemeColor: class { constructor(public id: string) {} }, Range, Selection
 };
 Module._load = function (request, parent, isMain) { return request === 'vscode' ? vscode : originalLoad.call(this, request, parent, isMain); };
-const { SearchController } = require('../out/search');
+const { SearchController } = require('../../out/search');
 Module._load = originalLoad;
 const search = new SearchController();
 search.start(editor, 1, 'one');

@@ -1,6 +1,6 @@
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
-const { setup } = require('./setup-emacs');
+import { setup } from './setup-emacs';
 
 const tests = ['oracle.js', 'movement-oracle.js', 'rectangle-oracle.js', 'zap-oracle.js', 'word-case-oracle.js', 'transpose-oracle.js', 'whitespace-oracle.js', 'indentation-oracle.js', 'mark-word-oracle.js', 'kill-line-oracle.js'];
 

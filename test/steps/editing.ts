@@ -1,9 +1,10 @@
 const { Given, When, Then, setWorldConstructor } = require('@cucumber/cucumber');
 const assert = require('node:assert/strict');
-const { EditorState, KillRing, PrefixArgument } = require('../../out/core/editor');
+const { EditorState, KillRing, PrefixArgument } = require('../../../out/core/editor');
 
 class EditingWorld {
-  constructor() { this.ring = new KillRing(); this.error = undefined; }
+  ring = new KillRing();
+  error: unknown;
 }
 setWorldConstructor(EditingWorld);
 const unescape = value => value.replace(/\\r/g, '\r').replace(/\\n/g, '\n');

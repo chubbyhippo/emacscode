@@ -1,11 +1,11 @@
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
-const { EditorState, KillRing } = require('../out/core/editor');
+const { EditorState, KillRing } = require('../../out/core/editor');
 const binary = process.env.EMACS_ORACLE;
 if (!binary) throw new Error('Set EMACS_ORACLE to GNU Emacs 31.1 executable');
 assert.match(execFileSync(binary, ['--version'], { encoding: 'utf8' }), /GNU Emacs 31\.1\b/);
-const expected = JSON.parse(execFileSync(binary, ['--batch', '-Q', '-l', path.join(__dirname, 'zap-oracle.el')], { encoding: 'utf8' }));
+const expected = JSON.parse(execFileSync(binary, ['--batch', '-Q', '-l', path.join(__dirname, '../../test/', 'zap-oracle.el')], { encoding: 'utf8' }));
 const cases = [[0, 1, 'a'], [1, 2, 'a'], [9, -1, 'a'], [9, -2, 'a'], [0, 1, 'A'], [0, 0, 'a'], [0, 2, 'z']];
 for (const [index, [point, count, character]] of cases.entries()) {
   const ring = new KillRing();

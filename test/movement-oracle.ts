@@ -1,13 +1,13 @@
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
-const { EditorState, KillRing, PrefixArgument } = require('../out/core/editor');
+const { EditorState, KillRing, PrefixArgument } = require('../../out/core/editor');
 
 const binary = process.env.EMACS_ORACLE;
 if (!binary) throw new Error('Set EMACS_ORACLE to GNU Emacs 31.1 executable');
 const version = execFileSync(binary, ['--version'], { encoding: 'utf8' });
 assert.match(version, /GNU Emacs 31\.1\b/);
-const output = execFileSync(binary, ['--batch', '-Q', '-l', path.join(__dirname, 'movement-oracle.el')], { encoding: 'utf8' });
+const output = execFileSync(binary, ['--batch', '-Q', '-l', path.join(__dirname, '../../test/', 'movement-oracle.el')], { encoding: 'utf8' });
 const cases = {
   n: { line: 1, move: (state, count) => state.vertical(count) },
   p: { line: 13, move: (state, count) => state.vertical(-count) },

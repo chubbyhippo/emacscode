@@ -2,7 +2,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { setup, validate, buildSource } = require('../scripts/setup-emacs');
+import { setup, validate, buildSource } from '../scripts/setup-emacs';
+import type { ExecFileSyncOptions } from 'node:child_process';
 
 async function main() {
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'emacscode-setup-test-'));
@@ -16,6 +17,7 @@ async function main() {
       const archive = process.env.EMACS_TEST_ARCHIVE;
       if (archive) {
         const binary = await setup({ target, archive, ignoreOverride: true, required: true });
+        if (!binary) throw new Error('Expected an Emacs installation');
         assert.equal(validate(binary), binary);
         assert.equal(await setup({ target, ignoreOverride: true }), binary);
         const { execFileSync } = require('node:child_process');
@@ -26,8 +28,8 @@ async function main() {
       await assert.rejects(setup({ target, ignoreOverride: true, required: true }), /supports Windows x64, Linux, and macOS/);
     }
     for (const platform of ['linux', 'darwin']) {
-      const calls = [];
-      const installed = buildSource(badArchive, temporary, target, platform, (command, args, options) => calls.push({ command, args, options }));
+      const calls: { command: string; args: string[]; options: ExecFileSyncOptions }[] = [];
+      const installed = buildSource(badArchive, temporary, target, platform, (command, args, options) => { calls.push({ command, args, options }); });
       assert.deepEqual(calls.map(call => call.command), ['tar', 'sh', 'make', 'make']);
       assert.deepEqual(calls[0].args, ['-xzf', badArchive, '-C', temporary]);
       assert.ok(calls[1].args.includes(`--prefix=${target}`));

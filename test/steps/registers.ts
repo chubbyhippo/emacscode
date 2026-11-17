@@ -1,6 +1,6 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const assert = require('node:assert/strict');
-const { Registers } = require('../../out/core/registers');
+const { Registers } = require('../../../out/core/registers');
 
 Given('a fresh register collection', function () { this.registers = new Registers(); });
 When('I store text {string} in register {string}', function (text, name) { this.registers.setText(name, text); });

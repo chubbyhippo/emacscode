@@ -1,6 +1,6 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const assert = require('node:assert/strict');
-const { editRectangle, yankRectangle } = require('../../out/core/rectangles');
+const { editRectangle, yankRectangle } = require('../../../out/core/rectangles');
 
 const decode = text => text.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
 Given('rectangle text {string} with mark {int} and point {int}', function (text, mark, point) { this.rectangleText = decode(text); this.rectangleMark = mark; this.rectanglePoint = point; });

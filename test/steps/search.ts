@@ -1,6 +1,6 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const assert = require('node:assert/strict');
-const { IncrementalSearch } = require('../../out/core/search');
+const { IncrementalSearch } = require('../../../out/core/search');
 
 Given('search text {string} at {int} in direction {int}', function (text, point, direction) { this.search = new IncrementalSearch(text, point, direction); });
 When('the search query is {string}', function (query) { this.search.setQuery(query); });
