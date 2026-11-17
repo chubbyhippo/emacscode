@@ -1,4 +1,18 @@
 Feature: Emacs editing state
+  @SC-movement-forward-character @global-993ac457822f70ee
+  Scenario: Move forward one character
+    Given text "abc" at position 1
+    When I move forward 1 character
+    Then point is 2
+    And the text is "abc"
+
+  @SC-movement-backward-character @global-8c4e3b701ae0ee96
+  Scenario: Move backward one character
+    Given text "abc" at position 1
+    When I move backward 1 character
+    Then point is 0
+    And the text is "abc"
+
   Scenario: Exchanging point and mark
     Given text "alpha beta" at position 0
     When I set the mark and move forward 5 characters
