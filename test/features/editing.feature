@@ -394,6 +394,25 @@ Feature: Emacs editing state
     Then the text is "acbd"
     And point is 3
 
+  @SC-transpose-mark
+  Scenario: Counted transpose moves the mark and deactivates the region
+    Given text "abcdef" at position 3
+    When I set the mark
+    And I transpose characters with count 2
+    Then the text is "abdecf"
+    And point is 5 and mark is 4
+    And the region is inactive
+
+  @SC-transpose-zero-mark
+  Scenario: Zero transpose exchanges point and mark and deactivates the region
+    Given text "abcdef" at position 1
+    When I set the mark
+    And I move forward 2 character
+    And I transpose characters with count 0
+    Then the text is "adcbef"
+    And point is 1 and mark is 3
+    And the region is inactive
+
   Scenario: Transpose at line end
     Given text "ab\ncd" at position 2
     When I transpose characters with count 1

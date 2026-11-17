@@ -428,6 +428,28 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(editor.document.getText(), 'alpha beta');
   });
+  it('Given an active mark When transposing with a prefix Then the mark is retained but the region deactivates', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abcdef',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 3);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.transposeCharacters');
+    assert.equal(document.getText(), 'abdecf');
+    assert.ok(editor.selection.isEmpty);
+    assert.equal(editor.selection.active.character, 5);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [5, 4],
+    );
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'abcdef');
+  });
   it('Given Alt+Z and a target When zapping Then the kill can be yanked', async function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     assert.ok(

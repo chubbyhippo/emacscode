@@ -174,6 +174,9 @@ Then('point is {int} and mark is {int}', function (point, mark) {
 Then('the region is active', function () {
   assert.equal(this.state.active, true);
 });
+Then('the region is inactive', function () {
+  assert.equal(this.state.active, false);
+});
 Then('the text is {string}', function (text) {
   assert.equal(this.state.text, unescape(text));
 });

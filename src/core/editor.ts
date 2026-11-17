@@ -568,10 +568,22 @@ export class EditorState {
       const moved = pieces.splice(first, 1)[0];
       pieces.splice(second, 0, moved);
     }
+    const originalMark = this.mark;
+    const markPosition = originalMark === undefined ? -1 : offsets.indexOf(originalMark);
     const replacement = pieces.slice(low, high + 1).join('');
     this.replace(offsets[low], offsets[high + 1], replacement);
     this.point = pieces.slice(0, resultPosition).join('').length;
     if (count === 0) this.mark = pieces.slice(0, position).join('').length;
+    else if (markPosition >= 0) {
+      const transformed =
+        count > 0 && markPosition > first && markPosition <= second
+          ? Math.min(second + 1, markPosition + count - 1)
+          : count < 0 && markPosition > second && markPosition <= first
+            ? Math.max(second, markPosition + count + 1)
+            : markPosition;
+      this.mark = pieces.slice(0, transformed).join('').length;
+    } else this.mark = originalMark;
+    this.active = false;
     this.done('transpose');
   }
   public insert(value: string): void {
