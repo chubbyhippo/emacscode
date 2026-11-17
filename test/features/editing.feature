@@ -152,6 +152,53 @@ Feature: Emacs editing state
     And the newest kill is "😀"
     And point is 1
 
+  @SC-backward-delete-region
+  Scenario: Backspace deletes a nonempty active region without adding a kill
+    Given text "abcdef" at position 1
+    When I set the mark
+    And I move forward 3 character
+    And I add an older kill "older"
+    And I delete backward without a prefix
+    Then the text is "aef"
+    And point is 1 and mark is 1
+    And the region is inactive
+    And the newest kill is "older"
+
+  @SC-backward-delete-empty-mark
+  Scenario: Backspace at an empty active region deletes the preceding character
+    Given text "abc" at position 2
+    When I set the mark
+    And I delete backward without a prefix
+    Then the text is "ac"
+    And point is 1 and mark is 1
+    And the region is inactive
+
+  @SC-backward-delete-prefix
+  Scenario: Consecutive prefixed backward deletes prepend to the kill ring
+    Given text "abcd" at position 3
+    When I delete backward with prefix 1
+    And I delete backward with prefix 1
+    Then the text is "ad"
+    And point is 1
+    And the newest kill is "bc"
+
+  @SC-backward-delete-error
+  Scenario: An oversized backward prefix preserves text and active mark
+    Given text "abc" at position 1
+    When I set the mark
+    And I delete backward with prefix 2
+    Then an error is reported
+    And the text is "abc"
+    And point is 1 and mark is 1
+    And the region is active
+
+  @SC-backward-delete-crlf
+  Scenario: Backspace deletes a CRLF as one character
+    Given text "a\r\nb" at position 3
+    When I delete backward without a prefix
+    Then the text is "ab"
+    And point is 1
+
   Scenario Outline: Combining marks remain attached during word motion
     Given text "<text>" at position <start>
     When I move forward 1 word

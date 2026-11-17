@@ -76,6 +76,20 @@ When('I delete one character without a prefix', function () {
     this.error = error;
   }
 });
+When('I delete backward with prefix {int}', function (count) {
+  try {
+    this.state.backwardDeleteCharacter(count, true);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I delete backward without a prefix', function () {
+  try {
+    this.state.backwardDeleteCharacter(1);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I kill the line', function () {
   try {
     this.state.killLine(1);

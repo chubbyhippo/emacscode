@@ -7,6 +7,7 @@ const tests = [
   'movement-oracle.js',
   'character-boundary-oracle.js',
   'delete-character-oracle.js',
+  'backward-delete-oracle.js',
   'line-boundary-oracle.js',
   'unicode-word-oracle.js',
   'combining-word-oracle.js',

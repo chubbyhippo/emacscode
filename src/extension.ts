@@ -235,7 +235,8 @@ export function activate(context: vscode.ExtensionContext): void {
     yank: (state, _count, _hasPrefix, lineEnding) => state.yank(lineEnding),
     yankPop: (state, count, _hasPrefix, lineEnding) => state.yankPop(count, lineEnding),
     deleteChar: (state, count, hasPrefix) => state.deleteCharacter(count, hasPrefix),
-    backwardDeleteChar: (state, count) => state.deleteCharacter(-count),
+    backwardDeleteChar: (state, count, hasPrefix) =>
+      state.backwardDeleteCharacter(count, hasPrefix),
     deleteHorizontalSpace: (state, _count, hasPrefix) => state.deleteHorizontalSpace(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
     openLine: (state, count, _hasPrefix, lineEnding) => {

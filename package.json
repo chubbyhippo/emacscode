@@ -168,6 +168,10 @@
         "title": "emacscode: deleteChar"
       },
       {
+        "command": "emacscode.backwardDeleteChar",
+        "title": "emacscode: backwardDeleteChar"
+      },
+      {
         "command": "emacscode.transposeCharacters",
         "title": "emacscode: transposeCharacters"
       },
@@ -415,6 +419,11 @@
       {
         "key": "ctrl+d",
         "command": "emacscode.deleteChar",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "backspace",
+        "command": "emacscode.backwardDeleteChar",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

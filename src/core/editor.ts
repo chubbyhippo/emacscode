@@ -524,6 +524,17 @@ export class EditorState {
       this.done('delete');
     }
   }
+  public backwardDeleteCharacter(count: number, hasPrefix = false): void {
+    if (!hasPrefix && this.active && this.mark !== undefined && this.mark !== this.point) {
+      this.replace(Math.min(this.mark, this.point), Math.max(this.mark, this.point), '');
+      this.active = false;
+      this.done('delete');
+      return;
+    }
+    if (!hasPrefix && count === 1 && this.point === 0)
+      throw new CharacterBoundaryError('beginning-of-buffer');
+    this.deleteCharacter(-count, hasPrefix);
+  }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point;
     let end = this.point;

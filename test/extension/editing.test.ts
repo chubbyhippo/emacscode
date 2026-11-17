@@ -137,6 +137,53 @@ describe('emacscode editor behavior', function () {
       provider.dispose();
     }
   });
+  it('Given Backspace When an active region exists Then the region is deleted and undo restores it', async function () {
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) =>
+          binding.key === 'backspace' &&
+          binding.command === 'emacscode.backwardDeleteChar' &&
+          binding.when.includes('editorTextFocus'),
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.backwardDeleteChar');
+    assert.equal(editor.document.getText(), 'pha beta');
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(editor.document.getText(), 'alpha beta');
+  });
+  it('Given an oversized backward prefix Then the mark survives and the next command uses no prefix', async function () {
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit9');
+    await vscode.commands.executeCommand('emacscode.backwardDeleteChar');
+    assert.equal(editor.document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [1, 2],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
+  it('Given CRLF text When deleting backward Then undo restores the newline', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a\nb',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(1, 0);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.backwardDeleteChar');
+    assert.equal(document.getText(), 'ab');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'a\r\nb');
+  });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;
