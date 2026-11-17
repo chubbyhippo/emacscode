@@ -567,6 +567,33 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'abcdef');
   });
+  it('Given Unicode and CRLF When transposing across a newline Then mark and undo remain coherent', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a😀\nbcd',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit3');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.transposeCharacters');
+    assert.equal(document.getText(), 'a😀bc\r\nd');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 0]);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual(
+      [
+        editor.selection.anchor.line,
+        editor.selection.anchor.character,
+        editor.selection.active.line,
+        editor.selection.active.character,
+      ],
+      [1, 0, 0, 0],
+    );
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'a😀\r\nbcd');
+  });
   it('Given Alt+Z and a target When zapping Then the kill can be yanked', async function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     assert.ok(

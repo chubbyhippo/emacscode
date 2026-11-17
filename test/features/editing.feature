@@ -507,6 +507,26 @@ Feature: Emacs editing state
     And point is 1 and mark is 3
     And the region is inactive
 
+  @SC-transpose-unicode-mark
+  Scenario: Negative transpose preserves a mark around a supplementary character
+    Given text "a😀bcde" at position 0
+    When I set the mark
+    And I move forward 3 character
+    And I transpose characters with count -1
+    Then the text is "ab😀cde"
+    And point is 2 and mark is 0
+    And the region is inactive
+
+  @SC-transpose-crlf-mark
+  Scenario: Counted transpose moves a CRLF without splitting it
+    Given text "a😀\r\nbcd" at position 0
+    When I set the mark
+    And I move forward 3 character
+    And I transpose characters with count 2
+    Then the text is "a😀bc\r\nd"
+    And point is 7 and mark is 0
+    And the region is inactive
+
   Scenario: Transpose at line end
     Given text "ab\ncd" at position 2
     When I transpose characters with count 1

@@ -16,6 +16,7 @@ const tests = [
   'word-case-oracle.js',
   'transpose-oracle.js',
   'transpose-mark-oracle.js',
+  'transpose-unicode-oracle.js',
   'whitespace-oracle.js',
   'indentation-oracle.js',
   'mark-word-oracle.js',
