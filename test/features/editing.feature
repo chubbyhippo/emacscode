@@ -591,6 +591,27 @@ Feature: Emacs editing state
     Then the text is "😀ab"
     And point is 3
 
+  @SC-delete-blank-lines
+  Scenario: Delete blank lines following a nonblank line
+    Given text "one\n\n\ntwo" at position 1
+    When I delete blank lines
+    Then the text is "one\ntwo"
+    And point is 1
+
+  @SC-delete-blank-lines-current
+  Scenario: Collapse a group of blank lines around point
+    Given text "one\n\n\ntwo" at position 4
+    When I delete blank lines
+    Then the text is "one\n\ntwo"
+    And point is 4
+
+  @SC-delete-blank-lines-crlf
+  Scenario: Delete a single CRLF blank line
+    Given text "one\r\n\r\ntwo" at position 5
+    When I delete blank lines
+    Then the text is "one\r\ntwo"
+    And point is 5
+
   @SC-cycle-spacing
   Scenario: Cycle spaces through one, none and original
     Given text "left   right" at position 6

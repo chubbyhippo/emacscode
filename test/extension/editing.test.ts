@@ -427,6 +427,30 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'leftright');
   });
+  it('Given blank lines When deleting them Then CRLF and undo are preserved', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\n\n\ntwo',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) =>
+          binding.key === 'ctrl+x ctrl+o' && binding.command === 'emacscode.deleteBlankLines',
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.deleteBlankLines');
+    assert.equal(document.getText(), 'one\r\ntwo');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.equal(editor.selection.active.character, 2);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one\r\n\r\n\r\ntwo');
+  });
   it('Given an active region and a numeric prefix When moving to indentation Then the region follows point', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: '  first\n    second',

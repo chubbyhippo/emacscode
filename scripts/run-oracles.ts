@@ -21,6 +21,7 @@ const tests = [
   'transpose-unicode-oracle.js',
   'whitespace-oracle.js',
   'cycle-spacing-oracle.js',
+  'delete-blank-lines-oracle.js',
   'indentation-oracle.js',
   'mark-word-oracle.js',
   'kill-line-oracle.js',

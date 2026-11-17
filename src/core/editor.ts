@@ -664,6 +664,67 @@ export class EditorState {
     this.active = false;
     this.done('cycle-spacing');
   }
+  public deleteBlankLines(): void {
+    const originalText = this.text;
+    const lineStart = (position: number): number =>
+      position === 0 ? 0 : this.text.lastIndexOf('\n', position - 1) + 1;
+    const lineEnd = (start: number): number => {
+      const newline = this.text.indexOf('\n', start);
+      return newline < 0
+        ? this.text.length
+        : newline > start && this.text[newline - 1] === '\r'
+          ? newline - 1
+          : newline;
+    };
+    const nextLine = (start: number): number => {
+      const newline = this.text.indexOf('\n', start);
+      return newline < 0 ? this.text.length : newline + 1;
+    };
+    const blank = (start: number): boolean =>
+      /^[ \t]*$/.test(this.text.slice(start, lineEnd(start)));
+    const remove = (start: number, end: number): void => {
+      const point = this.point;
+      if (start !== end) this.replace(start, end, '');
+      this.point = point <= start ? point : point <= end ? start : point - (end - start);
+    };
+    let start = lineStart(this.point);
+    const isBlank = blank(start);
+    const following = nextLine(start);
+    const previous =
+      start === 0 ? undefined : lineStart(start - (this.text[start - 2] === '\r' ? 2 : 1));
+    const single =
+      isBlank &&
+      !(following < this.text.length && blank(following)) &&
+      (previous === undefined || !blank(previous));
+    if (isBlank) {
+      let first = start;
+      while (first > 0) {
+        const prior = lineStart(first - (this.text[first - 2] === '\r' ? 2 : 1));
+        if (!blank(prior)) break;
+        first = prior;
+      }
+      const end = single ? following : start;
+      remove(first, end);
+      this.point = first;
+      start = first;
+    }
+    if (!(isBlank && single)) {
+      const from = nextLine(start);
+      let end = from;
+      while (end < this.text.length && blank(end)) end = nextLine(end);
+      remove(from, end);
+    }
+    start = lineStart(this.point);
+    if (
+      this.point === start &&
+      blank(start) &&
+      nextLine(start) === this.text.length &&
+      this.text.endsWith('\n')
+    )
+      remove(start, this.text.length);
+    if (this.text !== originalText) this.active = false;
+    this.done('delete');
+  }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point;
     let end = this.point;

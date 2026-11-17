@@ -199,6 +199,9 @@ When('I transpose characters with count {int}', function (count) {
     this.error = error;
   }
 });
+When('I delete blank lines', function () {
+  this.state.deleteBlankLines();
+});
 When('I cycle spacing', function () {
   this.state.cycleSpacing();
 });

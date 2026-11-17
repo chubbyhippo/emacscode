@@ -196,6 +196,10 @@
         "title": "emacscode: openLine"
       },
       {
+        "command": "emacscode.deleteBlankLines",
+        "title": "emacscode: deleteBlankLines"
+      },
+      {
         "command": "emacscode.cancel",
         "title": "emacscode: cancel"
       },
@@ -470,6 +474,11 @@
       {
         "key": "ctrl+o",
         "command": "emacscode.openLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+o",
+        "command": "emacscode.deleteBlankLines",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
