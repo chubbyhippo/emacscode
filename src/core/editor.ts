@@ -341,6 +341,62 @@ export class EditorState {
     this.point = this.wordPosition(count);
     this.done('move');
   }
+  public moveParagraph(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid paragraph count');
+    const lines: { start: number; end: number; separator: boolean; starter: boolean }[] = [];
+    let start = 0;
+    while (start < this.text.length) {
+      const newline = this.text.indexOf('\n', start);
+      const end = newline < 0 ? this.text.length : newline;
+      const value = this.text.slice(start, end).replace(/\r$/, '');
+      const separator = /^[ \t\f]*$/.test(value);
+      lines.push({ start, end, separator, starter: separator || /^[ \t]*\f/.test(value) });
+      if (newline < 0) break;
+      start = newline + 1;
+    }
+    let position = this.point;
+    for (let iteration = 0; iteration < Math.abs(count); iteration++) {
+      if (count > 0) {
+        if (position >= this.text.length) break;
+        let line = lines.findIndex(
+          (item, index) => position < (lines[index + 1]?.start ?? this.text.length),
+        );
+        while (line < lines.length && lines[line].separator) line++;
+        if (line < lines.length) line++;
+        while (line < lines.length && !lines[line].starter) line++;
+        position = line < lines.length ? lines[line].start : this.text.length;
+      } else {
+        if (position <= 0) break;
+        let line = lines.findIndex(
+          (item, index) => position - 1 < (lines[index + 1]?.start ?? this.text.length),
+        );
+        const currentLine = lines.find(
+          (item, index) => position < (lines[index + 1]?.start ?? this.text.length + 1),
+        );
+        const currentSuffix = this.text
+          .slice(position, currentLine?.end ?? position)
+          .replace(/\r$/, '');
+        if (
+          !/^[ \t\f]*$/.test(currentSuffix) &&
+          lines[line]?.separator &&
+          /^\r?$/.test(this.text.slice(lines[line].start, lines[line].end)) &&
+          position > lines[line].start
+        ) {
+          position = lines[line].start;
+          continue;
+        }
+        while (line > 0 && lines[line].separator) line--;
+        while (line > 0 && !lines[line].starter) line--;
+        if (lines[line]?.separator) {
+          const value = this.text.slice(lines[line].start, lines[line].end).replace(/\r$/, '');
+          position = /^[ \t]*$/.test(value) ? lines[line].start : (lines[line + 1]?.start ?? 0);
+          if (value.length > 0 && /^[ \t]+$/.test(value)) position = lines[line + 1]?.start ?? 0;
+        } else position = lines[line]?.start ?? 0;
+      }
+    }
+    this.point = position;
+    this.done('move');
+  }
   public markWord(count: number, hasPrefix: boolean): void {
     const extend = this.mark !== undefined && (this.active || this.previous === 'mark-word');
     const origin = extend ? this.mark! : this.point;
