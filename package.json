@@ -200,6 +200,10 @@
         "title": "emacscode: transposeCharacters"
       },
       {
+        "command": "emacscode.transposeWords",
+        "title": "emacscode: transposeWords"
+      },
+      {
         "command": "emacscode.openLine",
         "title": "emacscode: openLine"
       },
@@ -492,6 +496,11 @@
       {
         "key": "ctrl+t",
         "command": "emacscode.transposeCharacters",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+t",
+        "command": "emacscode.transposeWords",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

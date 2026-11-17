@@ -18,6 +18,7 @@ const tests = [
   'zap-oracle.js',
   'word-case-oracle.js',
   'transpose-oracle.js',
+  'transpose-words-oracle.js',
   'transpose-mark-oracle.js',
   'transpose-unicode-oracle.js',
   'whitespace-oracle.js',

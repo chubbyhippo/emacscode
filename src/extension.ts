@@ -247,6 +247,7 @@ export function activate(context: vscode.ExtensionContext): void {
     deleteBlankLines: (state) => state.deleteBlankLines(),
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
+    transposeWords: (state, count) => state.transposeWords(count),
     openLine: (state, count, _hasPrefix, lineEnding) => {
       const origin = state.point;
       state.insert(lineEnding.repeat(Math.max(0, count)));

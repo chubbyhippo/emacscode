@@ -671,6 +671,26 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  it('Given adjacent words When transposed Then undo restores the original text', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one, two three',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 3);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) => binding.key === 'alt+t' && binding.command === 'emacscode.transposeWords',
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.transposeWords');
+    assert.equal(document.getText(), 'two, one three');
+    assert.equal(editor.selection.active.character, 8);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one, two three');
+  });
   it('Given Ctrl+T When transposing characters Then undo restores the document', async function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     assert.ok(

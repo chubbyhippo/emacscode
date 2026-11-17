@@ -195,6 +195,13 @@ When('I zap {int} occurrences of {string}', function (count, character) {
 When('I {word} {int} words', function (kind, count) {
   this.state.changeWordCase(kind, count);
 });
+When('I transpose words with count {int}', function (count) {
+  try {
+    this.state.transposeWords(count);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I transpose characters with count {int}', function (count) {
   try {
     this.state.transposeCharacters(count);

@@ -536,6 +536,30 @@ Feature: Emacs editing state
     Then the text is "ONE TWO"
     And point is 7
 
+  @SC-transpose-words
+  Scenario: Transpose two words and preserve punctuation
+    Given text "one, two three" at position 3
+    When I transpose words with count 1
+    Then the text is "two, one three"
+    And point is 8
+
+  @SC-transpose-words-negative
+  Scenario: Move a word backward with a negative prefix
+    Given text "one two three" at position 9
+    When I transpose words with count -2
+    Then the text is "three one two"
+    And point is 5
+
+  @SC-transpose-words-zero
+  Scenario: Transpose the words around point and mark
+    Given text "one two three" at position 13
+    When I set the mark
+    And I move backward 13 character
+    And I transpose words with count 0
+    Then the text is "three two one"
+    And point is 13 and mark is 0
+    And the region is inactive
+
   Scenario: Transpose adjacent characters
     Given text "abcd" at position 2
     When I transpose characters with count 1

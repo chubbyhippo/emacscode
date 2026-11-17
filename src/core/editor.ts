@@ -800,6 +800,65 @@ export class EditorState {
     if (start !== end) this.replace(start, end, '');
     this.done('delete');
   }
+  public transposeWords(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
+    const originalPoint = this.point;
+    const originalMark = this.mark;
+    const pair = (origin: number, distance: number): [number, number] => {
+      const first = this.wordPosition(distance, origin);
+      return [first, this.wordPosition(-distance, first)];
+    };
+    let first: [number, number];
+    let second: [number, number];
+    if (count === 0) {
+      if (this.mark === undefined) throw new Error('No mark set');
+      first = pair(this.point, 1);
+      second = pair(this.mark, 1);
+    } else {
+      first = pair(this.point, -1);
+      second = pair(count > 0 ? first[1] : first[0], count);
+      this.point = second[1];
+    }
+    let firstStart = Math.min(...first);
+    let firstEnd = Math.max(...first);
+    let secondStart = Math.min(...second);
+    let secondEnd = Math.max(...second);
+    if (firstStart > secondStart) {
+      [firstStart, secondStart] = [secondStart, firstStart];
+      [firstEnd, secondEnd] = [secondEnd, firstEnd];
+    }
+    if (firstEnd > secondStart) {
+      if (count === 0) this.point = originalPoint;
+      throw new Error('Cannot transpose overlapping words');
+    }
+    const left = this.text.slice(firstStart, firstEnd);
+    const right = this.text.slice(secondStart, secondEnd);
+    const originalText = this.text;
+    const middle = this.text.slice(firstEnd, secondStart);
+    const transform = (position: number): number => {
+      if (position >= firstEnd) position += right.length;
+      if (position > firstEnd) position -= left.length;
+      else if (position >= firstStart) position = firstStart;
+      const boundary = secondStart + right.length - left.length;
+      if (position > boundary) position += left.length;
+      const deletionStart = boundary + left.length;
+      if (position > deletionStart + right.length) position -= right.length;
+      else if (position >= deletionStart) position = deletionStart;
+      return position;
+    };
+    this.replace(firstStart, secondEnd, right + middle + left);
+    if (originalMark !== undefined) this.mark = transform(originalMark);
+    this.point =
+      count === 0
+        ? (this.mark ?? originalPoint)
+        : count > 0
+          ? Math.max(...second)
+          : Math.min(...second) + right.length;
+    if (count === 0) this.mark = transform(originalPoint);
+    if (this.text !== originalText) this.active = false;
+    else if (count === 0) this.active = true;
+    this.done('transpose');
+  }
   public transposeCharacters(count: number): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
     const characters = Array.from(this.text.replace(/\r\n/g, '\n'));
