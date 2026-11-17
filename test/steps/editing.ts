@@ -63,7 +63,18 @@ When('I try moving {int} characters', function (count) {
   }
 });
 When('I delete {int} characters', function (count) {
-  this.state.deleteCharacter(count);
+  try {
+    this.state.deleteCharacter(count, true);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I delete one character without a prefix', function () {
+  try {
+    this.state.deleteCharacter(1);
+  } catch (error) {
+    this.error = error;
+  }
 });
 When('I kill the line', function () {
   try {

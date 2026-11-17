@@ -1,5 +1,11 @@
 import * as vscode from 'vscode';
-import { CharacterBoundaryError, EditorState, KillRing, PrefixArgument } from './core/editor';
+import {
+  CharacterBoundaryError,
+  CharacterDeletionRangeError,
+  EditorState,
+  KillRing,
+  PrefixArgument,
+} from './core/editor';
 import { SearchController } from './search';
 import { Registers } from './core/registers';
 import { editRectangle, RectangleAction, yankRectangle } from './core/rectangles';
@@ -165,7 +171,11 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
               }
             } catch (error) {
-              if (error instanceof CharacterBoundaryError && state.text === before) {
+              if (
+                (error instanceof CharacterBoundaryError ||
+                  error instanceof CharacterDeletionRangeError) &&
+                state.text === before
+              ) {
                 try {
                   await apply(editor, state, before);
                 } catch (applyError) {
@@ -224,7 +234,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     yank: (state, _count, _hasPrefix, lineEnding) => state.yank(lineEnding),
     yankPop: (state, count, _hasPrefix, lineEnding) => state.yankPop(count, lineEnding),
-    deleteChar: (state, count) => state.deleteCharacter(count),
+    deleteChar: (state, count, hasPrefix) => state.deleteCharacter(count, hasPrefix),
     backwardDeleteChar: (state, count) => state.deleteCharacter(-count),
     deleteHorizontalSpace: (state, _count, hasPrefix) => state.deleteHorizontalSpace(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),

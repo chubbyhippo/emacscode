@@ -6,6 +6,13 @@ export class CharacterBoundaryError extends Error {
   }
 }
 
+export class CharacterDeletionRangeError extends Error {
+  public readonly code = 'args-out-of-range';
+  constructor() {
+    super('Character count exceeds buffer bounds');
+  }
+}
+
 export class KillRing {
   private entries: string[] = [];
   private index = 0;
@@ -496,16 +503,26 @@ export class EditorState {
     this.yankRange = [start, this.point];
     this.done('yank-pop');
   }
-  public deleteCharacter(count: number): void {
+  public deleteCharacter(count: number, hasPrefix = false): void {
     const origin = this.point;
+    const previous = this.previous;
     try {
       this.moveCharacter(count);
     } catch (error) {
+      this.point = origin;
       if (!(error instanceof CharacterBoundaryError)) throw error;
+      if (!hasPrefix && count === 1 && origin === this.text.length) throw error;
+      throw new CharacterDeletionRangeError();
     }
     const end = this.point;
-    this.replace(Math.min(origin, end), Math.max(origin, end), '');
-    this.done('delete');
+    if (hasPrefix) {
+      this.previous = previous;
+      this.kill(origin, end, count < 0 ? 'backward' : 'forward');
+    } else {
+      if (origin !== end) this.replace(Math.min(origin, end), Math.max(origin, end), '');
+      this.active = false;
+      this.done('delete');
+    }
   }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point;

@@ -99,10 +99,57 @@ Feature: Emacs editing state
       | a\r\nb | 1     | 3     | 4   |
       |         | 0     | 1     | 0   |
 
-  Scenario: Overshooting character deletion keeps the existing clamped behavior
+  @SC-delete-character-boundary
+  Scenario Outline: Overshooting character deletion leaves the buffer and region unchanged
+    Given text "abc" at position <start>
+    When I set the mark
+    And I add an older kill "older"
+    And I delete <count> characters
+    Then the text is "abc"
+    And point is <start> and mark is <start>
+    And the region is active
+    And the newest kill is "older"
+    And an error is reported
+    Examples:
+      | start | count |
+      | 1     | 9     |
+      | 1     | -2    |
+
+  @SC-delete-character-prefix
+  Scenario: Prefixed deletion kills and subsequent kills append
+    Given text "abcdef" at position 2
+    When I delete 1 characters
+    And I delete 1 characters
+    Then the text is "abef"
+    And the newest kill is "cd"
+    And point is 2
+
+  @SC-delete-character-zero
+  Scenario: A zero prefix creates an empty kill and deactivates the mark
     Given text "abc" at position 1
-    When I delete 9 characters
-    Then the text is "a"
+    When I set the mark
+    And I add an older kill "older"
+    And I delete 0 characters
+    Then the text is "abc"
+    And point is 1 and mark is 1
+    And the region is inactive
+    And the kill ring contains "" then "older"
+
+  @SC-delete-character-crlf
+  Scenario: Unprefixed deletion removes a CRLF as one character without killing
+    Given text "a\r\nb" at position 1
+    When I add an older kill "older"
+    And I delete one character without a prefix
+    Then the text is "ab"
+    And the newest kill is "older"
+    And point is 1
+
+  @SC-delete-character-supplementary
+  Scenario: Prefixed backward deletion kills a supplementary character intact
+    Given text "a😀b" at position 3
+    When I delete -1 characters
+    Then the text is "ab"
+    And the newest kill is "😀"
     And point is 1
 
   Scenario Outline: Combining marks remain attached during word motion

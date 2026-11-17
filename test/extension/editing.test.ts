@@ -67,6 +67,76 @@ describe('emacscode editor behavior', function () {
     );
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given an oversized deletion prefix Then the document and active region survive and the prefix resets', async function () {
+    const position = new vscode.Position(0, 5);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit9');
+    await vscode.commands.executeCommand('emacscode.deleteChar');
+    assert.equal(editor.document.getText(), 'alpha beta');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [5, 5],
+    );
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [5, 6],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
+  it('Given a numeric deletion prefix Then the deleted text can be yanked and undone', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.deleteChar');
+      assert.equal(editor.document.getText(), 'pha beta');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editor.document.getText(), 'alpha beta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(editor.document.getText(), 'pha beta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(editor.document.getText(), 'alpha beta');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
+  it('Given a CRLF boundary When deleting a character Then the newline is removed intact and undo restores it', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a\nb',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.deleteChar');
+    assert.equal(document.getText(), 'ab');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'a\r\nb');
+  });
+  it('Given read-only text When prefixed deletion is rejected Then text is unchanged and later editing works', async function () {
+    const scheme = 'emacscode-delete-readonly-test';
+    const provider = vscode.workspace.registerTextDocumentContentProvider(scheme, {
+      provideTextDocumentContent: () => 'protected',
+    });
+    try {
+      const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(`${scheme}:/text`));
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.deleteChar');
+      assert.equal(document.getText(), 'protected');
+      const editable = await vscode.workspace.openTextDocument({
+        content: 'abc',
+        language: 'plaintext',
+      });
+      editor = await vscode.window.showTextDocument(editable);
+      await vscode.commands.executeCommand('emacscode.deleteChar');
+      assert.equal(editable.getText(), 'bc');
+    } finally {
+      provider.dispose();
+    }
+  });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;
