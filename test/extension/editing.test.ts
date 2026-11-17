@@ -5,19 +5,31 @@ describe('emacscode editor behavior', function () {
   this.timeout(15000);
   let editor;
   before(async function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     assert.ok(extension);
     await extension.activate();
   });
   beforeEach(async function () {
-    const document = await vscode.workspace.openTextDocument({content:'alpha beta',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha beta',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
   });
-  afterEach(async function () { await vscode.commands.executeCommand('workbench.action.closeActiveEditor'); });
+  afterEach(async function () {
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  });
   it('Given default editor settings Then the extension contributes a block cursor', async function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    assert.equal(extension.packageJSON.contributes.configurationDefaults['editor.cursorStyle'], 'block');
-    assert.equal(vscode.workspace.getConfiguration('editor', editor.document.uri).inspect('cursorStyle').defaultValue, 'block');
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.equal(
+      extension.packageJSON.contributes.configurationDefaults['editor.cursorStyle'],
+      'block',
+    );
+    assert.equal(
+      vscode.workspace.getConfiguration('editor', editor.document.uri).inspect('cursorStyle')
+        .defaultValue,
+      'block',
+    );
     assert.equal(editor.options.cursorStyle, vscode.TextEditorCursorStyle.Block);
   });
   it('Given an explicit cursor preference Then it overrides the extension default', async function () {
@@ -25,35 +37,55 @@ describe('emacscode editor behavior', function () {
     const previous = configuration.inspect('cursorStyle').globalValue;
     try {
       await configuration.update('cursorStyle', 'line', vscode.ConfigurationTarget.Global);
-      assert.equal(vscode.workspace.getConfiguration('editor', editor.document.uri).get('cursorStyle'), 'line');
-    } finally { await configuration.update('cursorStyle', previous, vscode.ConfigurationTarget.Global); }
+      assert.equal(
+        vscode.workspace.getConfiguration('editor', editor.document.uri).get('cursorStyle'),
+        'line',
+      );
+    } finally {
+      await configuration.update('cursorStyle', previous, vscode.ConfigurationTarget.Global);
+    }
   });
   it('Given an editor When moving forward Then point advances', async function () {
     await vscode.commands.executeCommand('emacscode.forwardChar');
     assert.equal(editor.selection.active.character, 1);
   });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;
     for (let digit = 0; digit <= 9; digit++) {
-      const matches = bindings.filter(binding => binding.key === `ctrl+${digit}` && binding.command === `emacscode.digit${digit}`);
+      const matches = bindings.filter(
+        (binding) =>
+          binding.key === `ctrl+${digit}` && binding.command === `emacscode.digit${digit}`,
+      );
       assert.equal(matches.length, 1);
-      assert.equal(matches[0].when, 'config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending');
+      assert.equal(
+        matches[0].when,
+        'config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput && emacscode.prefixPending',
+      );
     }
   });
   for (const [key, command, start, expected, next] of [
     ['ctrl+n', 'nextLine', [1, 15], [13, 15], [14, 15]],
     ['ctrl+p', 'previousLine', [13, 15], [1, 15], [0, 15]],
     ['ctrl+f', 'forwardChar', [1, 15], [1, 27], [1, 28]],
-    ['ctrl+b', 'backwardChar', [1, 15], [1, 3], [1, 2]]
+    ['ctrl+b', 'backwardChar', [1, 15], [1, 3], [1, 2]],
   ]) {
     it(`Given a prefix of 12 When ${key} moves Then it applies once`, async function () {
-      const document = await vscode.workspace.openTextDocument({content:Array.from({length: 16}, () => 'abcdefghijklmnopqrstuvwxyz0123456789').join('\n'),language:'plaintext'});
+      const document = await vscode.workspace.openTextDocument({
+        content: Array.from({ length: 16 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789').join(
+          '\n',
+        ),
+        language: 'plaintext',
+      });
       editor = await vscode.window.showTextDocument(document);
       const position = new vscode.Position(...start);
       editor.selection = new vscode.Selection(position, position);
-      const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-      assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === key && binding.command === `emacscode.${command}`));
+      const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) => binding.key === key && binding.command === `emacscode.${command}`,
+        ),
+      );
       await vscode.commands.executeCommand('emacscode.universalArgument');
       await vscode.commands.executeCommand('emacscode.digit1');
       await vscode.commands.executeCommand('emacscode.digit2');
@@ -67,11 +99,15 @@ describe('emacscode editor behavior', function () {
   for (const [key, command, expected] of [
     ['alt+u', 'upcaseWord', 'ALPHA beta'],
     ['alt+l', 'downcaseWord', 'alpha beta'],
-    ['alt+c', 'capitalizeWord', 'Alpha beta']
+    ['alt+c', 'capitalizeWord', 'Alpha beta'],
   ]) {
     it(`Given ${key} When converting a word Then it uses the matching command`, async function () {
-      const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-      assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === key && binding.command === `emacscode.${command}`));
+      const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) => binding.key === key && binding.command === `emacscode.${command}`,
+        ),
+      );
       await vscode.commands.executeCommand(`emacscode.${command}`);
       assert.equal(editor.document.getText(), expected);
       assert.equal(editor.selection.active.character, 5);
@@ -83,10 +119,13 @@ describe('emacscode editor behavior', function () {
     ['beginningOfLine', 0, [0, 0]],
     ['endOfLine', 0, [0, 2]],
     ['beginningOfLine', -2, [0, 0]],
-    ['endOfLine', -2, [0, 0]]
+    ['endOfLine', -2, [0, 0]],
   ] as [string, number, number[]][]) {
     it(`Given prefix ${prefix} When invoking ${command} Then point and active mark follow Emacs line motion`, async function () {
-      const document = await vscode.workspace.openTextDocument({content:'aa\nbb\ncc',language:'plaintext'});
+      const document = await vscode.workspace.openTextDocument({
+        content: 'aa\nbb\ncc',
+        language: 'plaintext',
+      });
       editor = await vscode.window.showTextDocument(document);
       const position = new vscode.Position(1, 1);
       editor.selection = new vscode.Selection(position, position);
@@ -100,7 +139,10 @@ describe('emacscode editor behavior', function () {
     });
   }
   it('Given a supplementary word When moving, killing and yanking Then its characters remain intact', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'a𐐀b c',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a𐐀b c',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     const clipboard = await vscode.env.clipboard.readText();
     try {
@@ -115,10 +157,15 @@ describe('emacscode editor behavior', function () {
       assert.equal(editor.selection.active.character, 4);
       await vscode.commands.executeCommand('undo');
       assert.equal(document.getText(), ' c');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given a decomposed word When moving, capitalizing and undoing Then combining marks remain attached', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'éCOLE fin',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'éCOLE fin',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     await vscode.commands.executeCommand('emacscode.forwardWord');
     assert.equal(editor.selection.active.character, 6);
@@ -131,7 +178,10 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(), 'éCOLE fin');
   });
   it('Given a negative prefix When downcasing Then point stays after the word', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'ONE TWO THREE',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'ONE TWO THREE',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     const position = new vscode.Position(0, 8);
     editor.selection = new vscode.Selection(position, position);
@@ -142,14 +192,25 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'ONE TWO THREE');
   });
-  for (const [prefix, expected] of [[false, 'leftright'], [true, 'left right']]) {
+  for (const [prefix, expected] of [
+    [false, 'leftright'],
+    [true, 'left right'],
+  ]) {
     it(`Given ${prefix ? 'a prefix' : 'no prefix'} When deleting whitespace Then the expected side is deleted`, async function () {
-      const document = await vscode.workspace.openTextDocument({content:'left   right',language:'plaintext'});
+      const document = await vscode.workspace.openTextDocument({
+        content: 'left   right',
+        language: 'plaintext',
+      });
       editor = await vscode.window.showTextDocument(document);
       const position = new vscode.Position(0, 6);
       editor.selection = new vscode.Selection(position, position);
-      const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-      assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'alt+\\' && binding.command === 'emacscode.deleteHorizontalSpace'));
+      const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === 'alt+\\' && binding.command === 'emacscode.deleteHorizontalSpace',
+        ),
+      );
       if (prefix) await vscode.commands.executeCommand('emacscode.digit1');
       await vscode.commands.executeCommand('emacscode.deleteHorizontalSpace');
       assert.equal(document.getText(), expected);
@@ -159,22 +220,40 @@ describe('emacscode editor behavior', function () {
     });
   }
   it('Given an active region and a numeric prefix When moving to indentation Then the region follows point', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'  first\n    second',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: '  first\n    second',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     const position = new vscode.Position(1, 7);
     editor.selection = new vscode.Selection(position, position);
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'alt+m' && binding.command === 'emacscode.backToIndentation'));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) => binding.key === 'alt+m' && binding.command === 'emacscode.backToIndentation',
+      ),
+    );
     await vscode.commands.executeCommand('emacscode.setMark');
     await vscode.commands.executeCommand('emacscode.digit3');
     await vscode.commands.executeCommand('emacscode.backToIndentation');
-    assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character, editor.selection.active.line, editor.selection.active.character], [1, 7, 1, 4]);
+    assert.deepEqual(
+      [
+        editor.selection.anchor.line,
+        editor.selection.anchor.character,
+        editor.selection.active.line,
+        editor.selection.active.character,
+      ],
+      [1, 7, 1, 4],
+    );
     await vscode.commands.executeCommand('emacscode.forwardChar');
     assert.equal(editor.selection.active.character, 5);
     assert.equal(document.getText(), '  first\n    second');
   });
   it('Given a numeric prefix When killing a line Then it includes the newline and undo restores it', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha\nbeta',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     const position = new vscode.Position(0, 2);
     editor.selection = new vscode.Selection(position, position);
@@ -185,12 +264,17 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'albeta');
       await vscode.commands.executeCommand('undo');
       assert.equal(document.getText(), 'alpha\nbeta');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given a CRLF line When killing through its end Then the line ending is removed intact', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha\nbeta',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
-    await editor.edit(builder => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
     const position = new vscode.Position(0, 5);
     editor.selection = new vscode.Selection(position, position);
     const clipboard = await vscode.env.clipboard.readText();
@@ -199,12 +283,17 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'alphabeta');
       await vscode.commands.executeCommand('undo');
       assert.equal(document.getText(), 'alpha\r\nbeta');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given CRLF text When killing before the newline Then yank and undo preserve it', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha\nbeta',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
-    await editor.edit(builder => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
     const position = new vscode.Position(0, 2);
     editor.selection = new vscode.Selection(position, position);
     const clipboard = await vscode.env.clipboard.readText();
@@ -217,12 +306,17 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'al\r\nbeta');
       await vscode.commands.executeCommand('undo');
       assert.equal(document.getText(), 'alpha\r\nbeta');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given CRLF text When killing two lines consecutively Then yank restores them', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'alpha\nbeta\ngamma',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha\nbeta\ngamma',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
-    await editor.edit(builder => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
     const position = new vscode.Position(0, 2);
     editor.selection = new vscode.Selection(position, position);
     const clipboard = await vscode.env.clipboard.readText();
@@ -234,51 +328,80 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'algamma');
       await vscode.commands.executeCommand('emacscode.yank');
       assert.equal(document.getText(), 'alpha\r\nbeta\r\ngamma');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   for (const sourceCRLF of [false, true]) {
     it(`Given a ${sourceCRLF ? 'CRLF' : 'LF'} kill When yanked into the other EOL Then the destination EOL is used`, async function () {
-      const source = await vscode.workspace.openTextDocument({content:'one\ntwo',language:'plaintext'});
+      const source = await vscode.workspace.openTextDocument({
+        content: 'one\ntwo',
+        language: 'plaintext',
+      });
       editor = await vscode.window.showTextDocument(source);
-      await editor.edit(builder => builder.setEndOfLine(sourceCRLF ? vscode.EndOfLine.CRLF : vscode.EndOfLine.LF));
+      await editor.edit((builder) =>
+        builder.setEndOfLine(sourceCRLF ? vscode.EndOfLine.CRLF : vscode.EndOfLine.LF),
+      );
       const clipboard = await vscode.env.clipboard.readText();
       try {
         await vscode.commands.executeCommand('emacscode.digit1');
         await vscode.commands.executeCommand('emacscode.killLine');
         assert.equal(source.getText(), 'two');
-        const destination = await vscode.workspace.openTextDocument({content:'target\nend',language:'plaintext'});
+        const destination = await vscode.workspace.openTextDocument({
+          content: 'target\nend',
+          language: 'plaintext',
+        });
         editor = await vscode.window.showTextDocument(destination);
-        await editor.edit(builder => builder.setEndOfLine(sourceCRLF ? vscode.EndOfLine.LF : vscode.EndOfLine.CRLF));
+        await editor.edit((builder) =>
+          builder.setEndOfLine(sourceCRLF ? vscode.EndOfLine.LF : vscode.EndOfLine.CRLF),
+        );
         await vscode.commands.executeCommand('emacscode.yank');
         const eol = sourceCRLF ? '\n' : '\r\n';
         assert.equal(destination.getText(), `one${eol}target${eol}end`);
         await vscode.commands.executeCommand('undo');
         assert.equal(destination.getText(), `target${eol}end`);
-      } finally { await vscode.env.clipboard.writeText(clipboard); }
+      } finally {
+        await vscode.env.clipboard.writeText(clipboard);
+      }
     });
   }
   it('Given a read-only document When a kill is rejected Then the ring and clipboard recover', async function () {
     const clipboard = await vscode.env.clipboard.readText();
     const scheme = 'emacscode-readonly-test';
-    const provider = vscode.workspace.registerTextDocumentContentProvider(scheme, { provideTextDocumentContent: () => 'protected text' });
+    const provider = vscode.workspace.registerTextDocumentContentProvider(scheme, {
+      provideTextDocumentContent: () => 'protected text',
+    });
     try {
       await vscode.commands.executeCommand('emacscode.killWord');
       assert.equal(editor.document.getText(), ' beta');
       const before = await vscode.env.clipboard.readText();
-      const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(`${scheme}:/readonly`));
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse(`${scheme}:/readonly`),
+      );
       editor = await vscode.window.showTextDocument(document);
       await vscode.commands.executeCommand('emacscode.killLine');
       assert.equal(document.getText(), 'protected text');
       assert.equal(await vscode.env.clipboard.readText(), before);
-      const destination = await vscode.workspace.openTextDocument({content:'destination',language:'plaintext'});
+      const destination = await vscode.workspace.openTextDocument({
+        content: 'destination',
+        language: 'plaintext',
+      });
       editor = await vscode.window.showTextDocument(destination);
       await vscode.commands.executeCommand('emacscode.yank');
       assert.equal(destination.getText(), 'alphadestination');
-    } finally { provider.dispose(); await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      provider.dispose();
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given Ctrl+T When transposing characters Then undo restores the document', async function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'ctrl+t' && binding.command === 'emacscode.transposeCharacters'));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) =>
+          binding.key === 'ctrl+t' && binding.command === 'emacscode.transposeCharacters',
+      ),
+    );
     const position = new vscode.Position(0, 2);
     editor.selection = new vscode.Selection(position, position);
     await vscode.commands.executeCommand('emacscode.transposeCharacters');
@@ -288,15 +411,21 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.document.getText(), 'alpha beta');
   });
   it('Given Alt+Z and a target When zapping Then the kill can be yanked', async function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'alt+z' && binding.command === 'emacscode.zapToChar'));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) => binding.key === 'alt+z' && binding.command === 'emacscode.zapToChar',
+      ),
+    );
     const clipboard = await vscode.env.clipboard.readText();
     try {
       await vscode.commands.executeCommand('emacscode.zapToChar', 'h');
       assert.equal(editor.document.getText(), 'a beta');
       await vscode.commands.executeCommand('emacscode.yank');
       assert.equal(editor.document.getText(), 'alpha beta');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given a numeric prefix When zapping Then the matching occurrence is counted', async function () {
     const clipboard = await vscode.env.clipboard.readText();
@@ -306,10 +435,15 @@ describe('emacscode editor behavior', function () {
       assert.equal(editor.document.getText(), ' beta');
       await vscode.commands.executeCommand('emacscode.yank');
       assert.equal(editor.document.getText(), 'alpha beta');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given incremental search When repeating and cancelling Then point returns to its origin', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'one two one',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one two one',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     await vscode.commands.executeCommand('emacscode.searchForward', 'one');
     assert.equal(editor.selection.active.character, 3);
@@ -322,13 +456,29 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.selection.active.character, 0);
   });
   it('Given search shortcuts Then they are limited to the search input context', function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    for (const [key, command] of [['ctrl+s','isearchForward'], ['ctrl+r','isearchBackward'], ['ctrl+g','isearchCancel'], ['alt+p','isearchPreviousHistory'], ['alt+n','isearchNextHistory']]) {
-      assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === key && binding.command === `emacscode.${command}` && binding.when.includes('inQuickInput && emacscode.isearchActive')));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['ctrl+s', 'isearchForward'],
+      ['ctrl+r', 'isearchBackward'],
+      ['ctrl+g', 'isearchCancel'],
+      ['alt+p', 'isearchPreviousHistory'],
+      ['alt+n', 'isearchNextHistory'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === key &&
+            binding.command === `emacscode.${command}` &&
+            binding.when.includes('inQuickInput && emacscode.isearchActive'),
+        ),
+      );
     }
   });
   it('Given one mark command When immediately moving down repeatedly Then the region extends across lines', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'first\nsecond\nthird',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'first\nsecond\nthird',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     await vscode.commands.executeCommand('emacscode.setMark');
     await vscode.commands.executeCommand('emacscode.nextLine');
@@ -363,37 +513,68 @@ describe('emacscode editor behavior', function () {
       await vscode.commands.executeCommand('emacscode.setMark');
       await vscode.commands.executeCommand('cursorRightSelect');
       await vscode.commands.executeCommand('cursorRightSelect');
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       assert.equal(editor.document.getText(editor.selection), 'al');
       await vscode.commands.executeCommand('emacscode.killRegion');
       assert.equal(editor.document.getText(), 'pha beta');
       await vscode.commands.executeCommand('emacscode.yank');
       assert.equal(editor.document.getText(), 'alpha beta');
-    } finally { await vscode.env.clipboard.writeText(clipboard); }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given an active region When an external edit occurs Then subsequent motion does not revive the old mark', async function () {
     await vscode.commands.executeCommand('emacscode.setMark');
     await vscode.commands.executeCommand('emacscode.forwardChar');
-    await editor.edit(builder => builder.insert(new vscode.Position(0, 0), 'x'));
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await editor.edit((builder) => builder.insert(new vscode.Position(0, 0), 'x'));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await vscode.commands.executeCommand('emacscode.forwardChar');
     assert.ok(editor.selection.isEmpty);
   });
   it('Given a mark Then ordinary movement keys are scoped to selection commands', function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    for (const [key, command] of [['left','cursorLeftSelect'], ['right','cursorRightSelect'], ['up','cursorUpSelect'], ['down','cursorDownSelect'], ['home','cursorHomeSelect'], ['end','cursorEndSelect'], ['pageup','cursorPageUpSelect'], ['pagedown','cursorPageDownSelect']]) {
-      assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === key && binding.command === command && binding.when.includes('emacscode.markActive')));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['left', 'cursorLeftSelect'],
+      ['right', 'cursorRightSelect'],
+      ['up', 'cursorUpSelect'],
+      ['down', 'cursorDownSelect'],
+      ['home', 'cursorHomeSelect'],
+      ['end', 'cursorEndSelect'],
+      ['pageup', 'cursorPageUpSelect'],
+      ['pagedown', 'cursorPageDownSelect'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === key &&
+            binding.command === command &&
+            binding.when.includes('emacscode.markActive'),
+        ),
+      );
     }
   });
   it('Given mark-word When repeated Then mark extends while point stays fixed', async function () {
-    const extension = vscode.extensions.all.find(item => item.packageJSON.name === 'emacscode');
-    assert.ok(extension.packageJSON.contributes.keybindings.some(binding => binding.key === 'alt+shift+2' && binding.command === 'emacscode.markWord'));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) => binding.key === 'alt+shift+2' && binding.command === 'emacscode.markWord',
+      ),
+    );
     await vscode.commands.executeCommand('emacscode.markWord');
-    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [5, 0]);
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [5, 0],
+    );
     await vscode.commands.executeCommand('emacscode.markWord');
-    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [10, 0]);
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [10, 0],
+    );
     await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
-    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [0, 10]);
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 10],
+    );
     await vscode.commands.executeCommand('emacscode.cancel');
     assert.ok(editor.selection.isEmpty);
   });
@@ -403,7 +584,10 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.negativeArgument');
     await vscode.commands.executeCommand('emacscode.digit2');
     await vscode.commands.executeCommand('emacscode.markWord');
-    assert.deepEqual([editor.selection.anchor.character, editor.selection.active.character], [0, 10]);
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 10],
+    );
     assert.equal(editor.document.getText(editor.selection), 'alpha beta');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
@@ -415,7 +599,9 @@ describe('emacscode editor behavior', function () {
         await vscode.commands.executeCommand(`emacscode.${command}`);
         assert.equal(editor.document.getText(), 'alpha beta');
         assert.equal(await vscode.env.clipboard.readText(), 'emacscode region sentinel');
-      } finally { await vscode.env.clipboard.writeText(clipboard); }
+      } finally {
+        await vscode.env.clipboard.writeText(clipboard);
+      }
     });
     it(`Given an empty active region When ${command} runs Then no line is removed`, async function () {
       const clipboard = await vscode.env.clipboard.readText();
@@ -426,7 +612,9 @@ describe('emacscode editor behavior', function () {
         assert.equal(editor.document.getText(), 'alpha beta');
         assert.equal(editor.selection.active.character, 0);
         assert.equal(await vscode.env.clipboard.readText(), '');
-      } finally { await vscode.env.clipboard.writeText(clipboard); }
+      } finally {
+        await vscode.env.clipboard.writeText(clipboard);
+      }
     });
   }
   it('Given a mark When selecting and killing a word Then yank restores it', async function () {
@@ -454,7 +642,10 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.document.getText(), 'alpha beta');
   });
   it('Given a rectangle When killed and yanked Then its text is restored', async function () {
-    const document = await vscode.workspace.openTextDocument({content:'abcde\nfghij\nklmno',language:'plaintext'});
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abcde\nfghij\nklmno',
+      language: 'plaintext',
+    });
     editor = await vscode.window.showTextDocument(document);
     const start = new vscode.Position(0, 2);
     editor.selection = new vscode.Selection(start, start);

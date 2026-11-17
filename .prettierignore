@@ -1,0 +1,8 @@
+node_modules/
+out/
+.build/
+.vscode-test/
+.emacs-oracle/
+.axet-code/
+docs/
+test/inventory*.ts

@@ -5,7 +5,13 @@ const { EditorState, KillRing } = require('../../out/core/editor');
 const binary = process.env.EMACS_ORACLE;
 if (!binary) throw new Error('Set EMACS_ORACLE to GNU Emacs 31.1 executable');
 assert.match(execFileSync(binary, ['--version'], { encoding: 'utf8' }), /GNU Emacs 31\.1\b/);
-const results = JSON.parse(execFileSync(binary, ['--batch', '-Q', '-l', path.join(__dirname, '../../test/', 'word-case-oracle.el')], { encoding: 'utf8' }));
+const results = JSON.parse(
+  execFileSync(
+    binary,
+    ['--batch', '-Q', '-l', path.join(__dirname, '../../test/', 'word-case-oracle.el')],
+    { encoding: 'utf8' },
+  ),
+);
 for (const expected of results) {
   const state = new EditorState(expected.input, expected.start, new KillRing());
   state.changeWordCase(expected.kind, expected.count);

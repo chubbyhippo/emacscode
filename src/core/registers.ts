@@ -4,7 +4,8 @@ export class Registers {
   private readonly values = new Map<string, RegisterValue>();
 
   public static validateName(name: string): void {
-    if (Array.from(name).length !== 1 || /[\r\n]/.test(name)) throw new Error('Register must be one character');
+    if (Array.from(name).length !== 1 || /[\r\n]/.test(name))
+      throw new Error('Register must be one character');
   }
 
   public setText(name: string, text: string): void {

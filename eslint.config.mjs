@@ -9,7 +9,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      'preserve-caught-error': 'off'
-    }
-  }
+      'preserve-caught-error': 'off',
+    },
+  },
 );

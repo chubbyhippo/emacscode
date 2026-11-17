@@ -7,12 +7,16 @@ const binary = process.env.EMACS_ORACLE;
 if (!binary) throw new Error('Set EMACS_ORACLE to GNU Emacs 31.1 executable');
 const version = execFileSync(binary, ['--version'], { encoding: 'utf8' });
 assert.match(version, /GNU Emacs 31\.1\b/);
-const output = execFileSync(binary, ['--batch', '-Q', '-l', path.join(__dirname, '../../test/', 'movement-oracle.el')], { encoding: 'utf8' });
+const output = execFileSync(
+  binary,
+  ['--batch', '-Q', '-l', path.join(__dirname, '../../test/', 'movement-oracle.el')],
+  { encoding: 'utf8' },
+);
 const cases = {
   n: { line: 1, move: (state, count) => state.vertical(count) },
   p: { line: 13, move: (state, count) => state.vertical(-count) },
   f: { line: 1, move: (state, count) => state.moveCharacter(count) },
-  b: { line: 1, move: (state, count) => state.moveCharacter(-count) }
+  b: { line: 1, move: (state, count) => state.moveCharacter(-count) },
 };
 const text = Array.from({ length: 16 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789').join('\n');
 for (const expected of JSON.parse(output)) {
