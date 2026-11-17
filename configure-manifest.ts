@@ -32,6 +32,7 @@ const bindings = [
   ['alt+backspace', 'backwardKillWord'],
   ['alt+z', 'zapToChar'],
   ['alt+\\', 'deleteHorizontalSpace'],
+  ['alt+space', 'cycleSpacing'],
   ['ctrl+y', 'yank'],
   ['alt+y', 'yankPop'],
   ['ctrl+d', 'deleteChar'],

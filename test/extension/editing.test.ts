@@ -403,6 +403,30 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'left   right');
     });
   }
+  it('Given spacing When invoked repeatedly Then it cycles and undo restores the previous edit', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'left   right',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 6);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) => binding.key === 'alt+space' && binding.command === 'emacscode.cycleSpacing',
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.cycleSpacing');
+    assert.equal(document.getText(), 'left right');
+    await vscode.commands.executeCommand('emacscode.cycleSpacing');
+    assert.equal(document.getText(), 'leftright');
+    await vscode.commands.executeCommand('emacscode.cycleSpacing');
+    assert.equal(document.getText(), 'left   right');
+    assert.equal(editor.selection.active.character, 6);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'leftright');
+  });
   it('Given an active region and a numeric prefix When moving to indentation Then the region follows point', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: '  first\n    second',

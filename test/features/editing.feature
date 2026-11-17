@@ -591,6 +591,31 @@ Feature: Emacs editing state
     Then the text is "😀ab"
     And point is 3
 
+  @SC-cycle-spacing
+  Scenario: Cycle spaces through one, none and original
+    Given text "left   right" at position 6
+    When I cycle spacing
+    Then the text is "left right"
+    And point is 5
+    When I cycle spacing
+    Then the text is "leftright"
+    And point is 4
+    When I cycle spacing
+    Then the text is "left   right"
+    And point is 6
+
+  @SC-cycle-spacing-negative
+  Scenario: Negative spacing prefix joins lines and restores CRLF
+    Given text "a \r\n  b" at position 4
+    When I cycle spacing with prefix -2
+    Then the text is "a  b"
+    And point is 3
+    When I cycle spacing
+    Then the text is "ab"
+    When I cycle spacing
+    Then the text is "a \r\n  b"
+    And point is 4
+
   Scenario: Delete whitespace around point
     Given text "left   right" at position 6
     When I delete horizontal whitespace around

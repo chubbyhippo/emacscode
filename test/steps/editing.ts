@@ -199,6 +199,12 @@ When('I transpose characters with count {int}', function (count) {
     this.error = error;
   }
 });
+When('I cycle spacing', function () {
+  this.state.cycleSpacing();
+});
+When('I cycle spacing with prefix {int}', function (count) {
+  this.state.cycleSpacing(count);
+});
 When('I delete horizontal whitespace {word}', function (direction) {
   this.state.deleteHorizontalSpace(direction === 'backward');
 });

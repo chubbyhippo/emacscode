@@ -96,6 +96,8 @@ export class EditorState {
   private previous = '';
   private yankRange: [number, number] | undefined;
   private goalColumn: number | undefined;
+  private spacingCycle:
+    { whitespace: string; originalPoint: number; count?: number; step: number } | undefined;
   constructor(
     text: string,
     point: number,
@@ -113,10 +115,12 @@ export class EditorState {
       this.mark = undefined;
       this.active = false;
       this.yankRange = undefined;
+      this.spacingCycle = undefined;
       this.previous = '';
     }
     if (this.point !== point) {
       this.previous = '';
+      this.spacingCycle = undefined;
       this.yankRange = undefined;
       this.goalColumn = undefined;
     }
@@ -124,6 +128,7 @@ export class EditorState {
   }
   private done(command: string): void {
     this.previous = command;
+    if (command !== 'cycle-spacing') this.spacingCycle = undefined;
     if (command !== 'yank' && command !== 'yank-pop') this.yankRange = undefined;
     if (command !== 'vertical') this.goalColumn = undefined;
   }
@@ -613,6 +618,51 @@ export class EditorState {
     if (!hasPrefix && count === 1 && this.point === 0)
       throw new CharacterBoundaryError('beginning-of-buffer');
     this.deleteCharacter(-count, hasPrefix);
+  }
+  public cycleSpacing(count?: number): void {
+    if (count !== undefined && !Number.isSafeInteger(count))
+      throw new Error('Invalid spacing count');
+    const allWhitespace = (character: string): boolean => /[ \t\r\n]/.test(character);
+    const range = (position: number): [number, number] => {
+      let start = position;
+      let end = position;
+      while (start > 0 && allWhitespace(this.text[start - 1])) start--;
+      while (end < this.text.length && allWhitespace(this.text[end])) end++;
+      return [start, end];
+    };
+    if (
+      this.previous !== 'cycle-spacing' ||
+      !this.spacingCycle ||
+      (count !== undefined && count !== this.spacingCycle.count)
+    ) {
+      const [start, end] = range(this.point);
+      this.spacingCycle = {
+        whitespace: this.text.slice(start, end),
+        originalPoint: this.point - start,
+        count,
+        step: 0,
+      };
+    }
+    const cycle = this.spacingCycle;
+    const [start, end] = range(this.point);
+    const original = cycle.whitespace;
+    if (this.text.slice(start, end) !== original) this.replace(start, end, original);
+    this.point = start + cycle.originalPoint;
+    if (cycle.step !== 2) {
+      const includeNewlines = (cycle.count ?? 1) < 0;
+      const isWhitespace = (character: string): boolean =>
+        includeNewlines ? allWhitespace(character) : character === ' ' || character === '\t';
+      let left = this.point;
+      let right = this.point;
+      while (left > 0 && isWhitespace(this.text[left - 1])) left--;
+      while (right < this.text.length && isWhitespace(this.text[right])) right++;
+      const value = cycle.step === 0 ? ' '.repeat(Math.abs(cycle.count ?? 1)) : '';
+      if (this.text.slice(left, right) !== value) this.replace(left, right, value);
+      this.point = left + value.length;
+    }
+    cycle.step = (cycle.step + 1) % 3;
+    this.active = false;
+    this.done('cycle-spacing');
   }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point;
