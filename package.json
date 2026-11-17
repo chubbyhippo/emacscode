@@ -88,6 +88,14 @@
         "title": "emacscode: forwardWord"
       },
       {
+        "command": "emacscode.backwardSentence",
+        "title": "emacscode: backwardSentence"
+      },
+      {
+        "command": "emacscode.forwardSentence",
+        "title": "emacscode: forwardSentence"
+      },
+      {
         "command": "emacscode.backwardParagraph",
         "title": "emacscode: backwardParagraph"
       },
@@ -351,6 +359,16 @@
       {
         "key": "alt+f",
         "command": "emacscode.forwardWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+a",
+        "command": "emacscode.backwardSentence",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+e",
+        "command": "emacscode.forwardSentence",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

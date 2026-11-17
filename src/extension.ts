@@ -210,6 +210,8 @@ export function activate(context: vscode.ExtensionContext): void {
     backToIndentation: (state) => state.backToIndentation(),
     backwardWord: (state, count) => state.moveWord(-count),
     forwardWord: (state, count) => state.moveWord(count),
+    backwardSentence: (state, count) => state.moveSentence(-count),
+    forwardSentence: (state, count) => state.moveSentence(count),
     backwardParagraph: (state, count) => state.moveParagraph(-count),
     forwardParagraph: (state, count) => state.moveParagraph(count),
     upcaseWord: (state, count) => state.changeWordCase('upcase', count),

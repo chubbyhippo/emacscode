@@ -184,6 +184,59 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'a\r\nb');
   });
+  it('Given sentence motion and a prefix Then the active selection follows point and the prefix resets', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'One.  Two!  Three?',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['alt+a', 'backwardSentence'],
+      ['alt+e', 'forwardSentence'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === key &&
+            binding.command === `emacscode.${command}` &&
+            binding.when.includes('editorTextFocus') &&
+            binding.when.includes('!terminalFocus'),
+        ),
+      );
+    }
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.forwardSentence');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 10],
+    );
+    await vscode.commands.executeCommand('emacscode.backwardSentence');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 6],
+    );
+    await vscode.commands.executeCommand('emacscode.negativeArgument');
+    await vscode.commands.executeCommand('emacscode.backwardSentence');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 10],
+    );
+    await vscode.commands.executeCommand('emacscode.digit9');
+    await vscode.commands.executeCommand('emacscode.forwardSentence');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 18],
+    );
+    await vscode.commands.executeCommand('emacscode.backwardSentence');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 12],
+    );
+    assert.equal(document.getText(), 'One.  Two!  Three?');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given an active mark and a prefix When moving paragraphs Then selection and prefix follow point', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one\nline\n\ntwo\n\nthree',

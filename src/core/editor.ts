@@ -366,6 +366,94 @@ export class EditorState {
     this.point = this.wordPosition(count);
     this.done('move');
   }
+  public moveSentence(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid sentence count');
+    const offsets = [0];
+    let text = '';
+    for (let index = 0; index < this.text.length;) {
+      const character = this.text.startsWith('\r\n', index)
+        ? '\n'
+        : String.fromCodePoint(this.text.codePointAt(index)!);
+      index += character === '\n' && this.text.startsWith('\r\n', index) ? 2 : character.length;
+      text += character;
+      offsets.push(index);
+    }
+    let position = offsets.indexOf(this.point);
+    if (position < 0) throw new Error('Point is not at a character boundary');
+    const characters = Array.from(text);
+    const paragraph = new EditorState(text, 0, new KillRing());
+    const utf16 = (character: number): number => characters.slice(0, character).join('').length;
+    const characterOffset = (offset: number): number => Array.from(text.slice(0, offset)).length;
+    const moveParagraph = (from: number, direction: number): number => {
+      paragraph.point = utf16(from);
+      paragraph.moveParagraph(direction);
+      return characterOffset(paragraph.point);
+    };
+    const paragraphStart = (from: number): number => {
+      let origin = from;
+      while (true) {
+        const start = moveParagraph(origin, -1);
+        let result = start;
+        while (result < characters.length && /[ \t\n]/.test(characters[result])) result++;
+        if (result >= origin && start < origin) {
+          if (start === 0) return start;
+          origin = start;
+        } else return result;
+      }
+    };
+    const paragraphEnd = (from: number): number => {
+      let origin = from;
+      while (true) {
+        if (origin >= characters.length) {
+          if (characters[characters.length - 1] === '\n') return origin;
+          throw new CharacterBoundaryError('end-of-buffer');
+        }
+        let end = moveParagraph(origin, 1);
+        if (end > 0 && characters[end - 1] === '\n') end--;
+        if (end <= origin && end < characters.length) {
+          origin = end + 1;
+          if (origin === characters.length) return origin;
+        } else return end;
+      }
+    };
+    const endings = (): { start: number; end: number; whitespace: number }[] => {
+      const matches: { start: number; end: number; whitespace: number }[] = [];
+      const expression =
+        /(?:[.?!…‽][\]"'”’)}»›]*(?=\n|$|[ \u00a0]\n|\t|[ \u00a0]{2})|[。．？！]+)[ \u00a0\t\n]*/gu;
+      for (const match of text.matchAll(expression)) {
+        const start = characterOffset(match.index);
+        const end = characterOffset(match.index + match[0].length);
+        let whitespace = end;
+        while (whitespace > start && /[ \u00a0\t\n]/.test(characters[whitespace - 1])) whitespace--;
+        matches.push({ start, end, whitespace });
+      }
+      return matches;
+    };
+    const matches = endings();
+    for (let iteration = 0; iteration < Math.abs(count); iteration++) {
+      const previous = position;
+      if (count > 0) {
+        this.point = offsets[position];
+        const end = paragraphEnd(position);
+        const match = matches.find((item) => item.start >= position && item.end <= end);
+        position = match ? match.whitespace : end;
+        while (match && position < match.end && characters[position] === '\u00a0') position++;
+      } else {
+        const start = paragraphStart(position);
+        let line = start;
+        while (line > 0 && characters[line - 1] !== '\n') line--;
+        const candidates = matches.filter(
+          (item) => item.start >= line && item.whitespace <= position && item.start < position,
+        );
+        let match = candidates.pop();
+        if (match && Math.min(match.end, position) === position) match = candidates.pop();
+        position = match ? Math.min(match.end, position) : start;
+      }
+      if (position === previous) break;
+    }
+    this.point = offsets[position];
+    this.done('move');
+  }
   public moveParagraph(count: number): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid paragraph count');
     const lines: { start: number; end: number; separator: boolean; starter: boolean }[] = [];

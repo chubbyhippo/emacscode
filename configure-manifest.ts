@@ -12,6 +12,8 @@ const bindings = [
   ['ctrl+e', 'endOfLine'],
   ['alt+b', 'backwardWord'],
   ['alt+f', 'forwardWord'],
+  ['alt+a', 'backwardSentence'],
+  ['alt+e', 'forwardSentence'],
   ['alt+shift+[', 'backwardParagraph'],
   ['alt+shift+]', 'forwardParagraph'],
   ['alt+g g', 'gotoLine'],

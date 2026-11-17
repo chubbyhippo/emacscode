@@ -92,6 +92,39 @@ Feature: Emacs editing state
       | 2    | 5     |
       | 9    | 15    |
 
+  @SC-sentence-motion
+  Scenario: Move across sentences with an active mark and signed counts
+    Given text "One.  Two!  Three?" at position 0
+    When I set the mark
+    And I move 2 sentences
+    Then point is 10 and mark is 0
+    And the region is active
+    When I move -1 sentences
+    Then point is 6 and mark is 0
+    And the region is active
+    And the text is "One.  Two!  Three?"
+
+  @SC-sentence-boundary
+  Scenario: Forward motion past the buffer retains partial movement and the mark
+    Given text "One." at position 0
+    When I set the mark
+    And I move 2 sentences
+    Then an error is reported
+    And point is 4 and mark is 0
+    And the region is active
+    And the text is "One."
+
+  @SC-sentence-crlf
+  Scenario: Sentence motion preserves CRLF and supplementary characters
+    Given text "😀first.\r\nSecond." at position 0
+    When I move 1 sentences
+    Then point is 8
+    And the text is "😀first.\r\nSecond."
+    When I move 1 sentences
+    Then point is 17
+    When I move -1 sentences
+    Then point is 10
+
   @SC-paragraph-motion
   Scenario: Move across paragraphs with an active mark and prefixes
     Given text "one\nline\n\ntwo\n\nthree" at position 1

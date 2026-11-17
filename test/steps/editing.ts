@@ -134,6 +134,13 @@ When('I move backward {int} word', function (count) {
 When('I move {int} paragraphs', function (count) {
   this.state.moveParagraph(count);
 });
+When('I move {int} sentences', function (count) {
+  try {
+    this.state.moveSentence(count);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I go to line {int}', function (line) {
   this.state.gotoLine(line);
 });

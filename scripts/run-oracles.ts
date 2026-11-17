@@ -11,6 +11,7 @@ const tests = [
   'line-boundary-oracle.js',
   'goto-line-oracle.js',
   'paragraph-oracle.js',
+  'sentence-oracle.js',
   'mark-paragraph-oracle.js',
   'unicode-word-oracle.js',
   'combining-word-oracle.js',
