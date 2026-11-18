@@ -9,7 +9,11 @@
                   ("nothing z" 9 ("M-/" "M-/"))
                   ("alpha alpine al" 15 ("M-0 M-/" "M-/"))
                   ("al alpha alpine" 2 ("M-0 M-/" "M-/"))
-                  ("alpha al alpine" 8 ("M-0 M-/" "M-/"))))
+                  ("alpha al alpine" 8 ("M-0 M-/" "M-/"))
+                  ("fooBar fo" 9 ("M-/" "M-/"))
+                  ("FooBar F" 8 ("M-/" "M-/"))
+                  ("fooBar foobar fo" 16 ("M-/" "M-/" "M-/"))
+                  ("alpha al" 8 ("M-/" "M-2 M-/" "M-/"))))
     (with-temp-buffer
       (fundamental-mode)
       (transient-mark-mode 1)

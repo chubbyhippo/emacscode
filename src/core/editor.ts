@@ -1110,6 +1110,7 @@ export class EditorState {
   public expandAbbreviation(count = 1, hasPrefix = false): void {
     if (!Number.isSafeInteger(count)) throw new AbbreviationError('Invalid abbreviation count');
     if (hasPrefix || this.previous !== 'abbreviation' || !this.abbreviation) {
+      this.done('other');
       const prefix = this.text.slice(0, this.point).match(/[\p{L}\p{N}_]+$/u)?.[0];
       if (!prefix) throw new AbbreviationError('No abbreviation at point');
       const start = this.point - prefix.length;
@@ -1121,6 +1122,11 @@ export class EditorState {
         count < 0 ? forward : hasPrefix && count > 0 ? backward : [...backward, ...forward];
       const lower = prefix.toLowerCase();
       const caseExpansion = (value: string): string => {
+        const rest = value.slice(1);
+        const simpleExpansion = rest === rest.toLowerCase() || rest === rest.toUpperCase();
+        const simplePrefix =
+          prefix === lower || (prefix === prefix.toUpperCase() && prefix.length > 1);
+        if (value.startsWith(prefix) && !(simpleExpansion && simplePrefix)) return value;
         if (prefix === prefix.toUpperCase() && prefix !== lower) return value.toUpperCase();
         if (prefix === lower) return value.toLowerCase();
         if (
@@ -1130,10 +1136,16 @@ export class EditorState {
           return value[0].toUpperCase() + value.slice(1).toLowerCase();
         return prefix + value.slice(prefix.length);
       };
+      const seen = new Set<string>();
       for (const word of ordered) {
-        if (word[0].toLowerCase().startsWith(lower) && word[0].length > prefix.length) {
-          const candidate = caseExpansion(word[0]);
-          if (!candidates.includes(candidate)) candidates.push(candidate);
+        const normalized = word[0].toLowerCase();
+        if (
+          normalized.startsWith(lower) &&
+          word[0].length > prefix.length &&
+          !seen.has(normalized)
+        ) {
+          seen.add(normalized);
+          candidates.push(caseExpansion(word[0]));
         }
       }
       const index = hasPrefix ? Math.max(0, Math.abs(count) - 1) : 0;

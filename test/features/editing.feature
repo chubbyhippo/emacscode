@@ -245,6 +245,26 @@ Feature: Emacs editing state
     When I expand an abbreviation
     Then the text is "alphabet alpha ALPHABET"
 
+  @SC-dabbrev-mixed-case
+  Scenario: Expansion preserves a matching mixed-case candidate
+    Given text "fooBar fo" at position 9
+    When I expand an abbreviation
+    Then the text is "fooBar fooBar"
+    When I expand an abbreviation
+    Then an error is reported
+    And the text is "fooBar fo"
+
+  @SC-dabbrev-prefix-recovery
+  Scenario: A failed explicit prefix resets the earlier expansion cycle
+    Given text "alpha al" at position 8
+    When I expand an abbreviation
+    Then the text is "alpha alpha"
+    When I expand an abbreviation with prefix 2
+    Then an error is reported
+    And the text is "alpha alpha"
+    When I expand an abbreviation
+    Then the text is "alpha alpha"
+
   @SC-dabbrev-zero-forward
   Scenario: A zero prefix searches forward when there is no preceding match
     Given text "al alpha alpine" at position 2

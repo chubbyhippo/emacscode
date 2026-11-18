@@ -554,6 +554,25 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'alpha alpha');
   });
+  it('Given a mixed-case abbreviation Then expansion preserves case and failure resets its cycle', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'fooBar fo',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 9);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'fooBar fooBar');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'fooBar fooBar');
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'fooBar fooBar');
+    assert.equal(editor.selection.active.character, 13);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'fooBar fo');
+  });
   it('Given a zero abbreviation prefix Then forward matches cycle and undo restores them', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'al alpha alpine',
