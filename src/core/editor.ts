@@ -1,6 +1,7 @@
 import { moveListDepth, moveStructure, StructureMovementError } from './structure';
 
 export type Direction = 'forward' | 'backward';
+export type PersistentGoal = { column?: number };
 
 export class CharacterBoundaryError extends Error {
   constructor(public readonly boundary: 'beginning-of-buffer' | 'end-of-buffer') {
@@ -139,6 +140,7 @@ export class EditorState {
     text: string,
     point: number,
     private readonly ring: KillRing,
+    private readonly persistentGoal: PersistentGoal = {},
   ) {
     this.text = text;
     this.point = this.clamp(point);
@@ -422,6 +424,21 @@ export class EditorState {
     this.point = position;
     this.done('move');
   }
+  public setGoalColumn(hasPrefix: boolean, tabSize = 8): void {
+    if (hasPrefix) {
+      this.persistentGoal.column = undefined;
+    } else {
+      if (!Number.isSafeInteger(tabSize) || tabSize < 1)
+        throw new ColumnMovementError('Invalid tab size');
+      const start = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
+      const text = this.text.slice(start, this.point);
+      if (/[^\x20-\x7e\t]/.test(text)) throw new ColumnMovementError('Unsupported display column');
+      let column = 0;
+      for (const character of text) column += character === '\t' ? tabSize - (column % tabSize) : 1;
+      this.persistentGoal.column = column;
+    }
+    this.done('set-goal-column');
+  }
   public vertical(count: number, tabSize = 8): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid line count');
     if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
@@ -429,7 +446,9 @@ export class EditorState {
     let column = 0;
     for (let position = start; position < this.point; position++)
       column += this.text[position] === '\t' ? tabSize - (column % tabSize) : 1;
-    const goal = this.goalTabSize === tabSize ? (this.goalColumn ?? column) : column;
+    const goal =
+      this.persistentGoal.column ??
+      (this.goalTabSize === tabSize ? (this.goalColumn ?? column) : column);
     this.goalTabSize = tabSize;
     let lineStart = start;
     for (let index = 0; index < Math.abs(count); index++) {

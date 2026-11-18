@@ -72,6 +72,10 @@
         "title": "emacscode: nextLine"
       },
       {
+        "command": "emacscode.setGoalColumn",
+        "title": "emacscode: setGoalColumn"
+      },
+      {
         "command": "emacscode.beginningOfLine",
         "title": "emacscode: beginningOfLine"
       },
@@ -404,6 +408,10 @@
         "title": "emacscode: copyToRegister"
       },
       {
+        "command": "emacscode.copyRectangleToRegister",
+        "title": "emacscode: copyRectangleToRegister"
+      },
+      {
         "command": "emacscode.insertRegister",
         "title": "emacscode: insertRegister"
       },
@@ -507,6 +515,11 @@
       {
         "key": "ctrl+n",
         "command": "emacscode.nextLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+n",
+        "command": "emacscode.setGoalColumn",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
@@ -947,6 +960,11 @@
       {
         "key": "ctrl+x r x",
         "command": "emacscode.copyToRegister",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x r r",
+        "command": "emacscode.copyRectangleToRegister",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

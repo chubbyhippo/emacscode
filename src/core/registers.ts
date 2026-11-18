@@ -1,4 +1,7 @@
-export type RegisterValue = { kind: 'text'; text: string } | { kind: 'number'; value: number };
+export type RegisterValue =
+  | { kind: 'text'; text: string }
+  | { kind: 'number'; value: number }
+  | { kind: 'rectangle'; rows: string[] };
 
 export class Registers {
   private readonly values = new Map<string, RegisterValue>();
@@ -11,6 +14,11 @@ export class Registers {
   public setText(name: string, text: string): void {
     Registers.validateName(name);
     this.values.set(name, { kind: 'text', text });
+  }
+
+  public setRectangle(name: string, rows: readonly string[]): void {
+    Registers.validateName(name);
+    this.values.set(name, { kind: 'rectangle', rows: [...rows] });
   }
 
   public setNumber(name: string, value: number): void {
@@ -30,6 +38,6 @@ export class Registers {
     Registers.validateName(name);
     const value = this.values.get(name);
     if (!value) throw new Error('Register is empty');
-    return { ...value };
+    return value.kind === 'rectangle' ? { kind: 'rectangle', rows: [...value.rows] } : { ...value };
   }
 }

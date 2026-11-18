@@ -8,6 +8,18 @@ Given('a fresh register collection', function () {
 When('I store text {string} in register {string}', function (text, name) {
   this.registers.setText(name, text);
 });
+When(
+  'I store rectangle rows {string} and {string} in register {string}',
+  function (first, second, name) {
+    this.registers.setRectangle(name, [first, second]);
+  },
+);
+Then(
+  'register {string} contains rectangle rows {string} and {string}',
+  function (name, first, second) {
+    assert.deepEqual(this.registers.read(name), { kind: 'rectangle', rows: [first, second] });
+  },
+);
 When('I increment register {string} by {int}', function (name, amount) {
   this.registers.increment(name, amount);
 });

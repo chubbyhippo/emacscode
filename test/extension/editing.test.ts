@@ -750,6 +750,26 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(), 'abc\nx');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given a persistent goal column Then motion retains it until a prefix clears it', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abcde\nx\n0123456789',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 4);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setGoalColumn');
+    await vscode.commands.executeCommand('emacscode.beginningOfLine');
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 1]);
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [2, 4]);
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.setGoalColumn');
+    await vscode.commands.executeCommand('emacscode.beginningOfLine');
+    await vscode.commands.executeCommand('emacscode.previousLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 0]);
+  });
   it('Given tabbed lines and an active mark When moving vertically Then the editor tab size determines the goal column', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'a\tb\nxy\n0123456789\n\tend',
@@ -1622,6 +1642,35 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.numberToRegister', 'n');
     await vscode.commands.executeCommand('emacscode.yankPop');
     assert.equal(editor.document.getText(), 'alpha beta');
+  });
+  it('Given rectangle registers When copied or cut Then rows can be inserted and edits undone', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abcde\nfghij\nklmno',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const start = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(start, start);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.copyRectangleToRegister', 'r');
+    assert.equal(document.getText(), 'abcde\nfghij\nklmno');
+    await vscode.commands.executeCommand('emacscode.universalArgument');
+    await vscode.commands.executeCommand('emacscode.copyRectangleToRegister', 's');
+    assert.equal(document.getText(), 'abde\nfgij\nklmno');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'abcde\nfghij\nklmno');
+    const end = document.positionAt(document.getText().length);
+    editor.selection = new vscode.Selection(end, end);
+    await vscode.commands.executeCommand('emacscode.insertRegister', 'r');
+    const lineEnding = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
+    assert.equal(
+      document.getText(),
+      `abcde${lineEnding}fghij${lineEnding}klmnoc${lineEnding}     h`,
+    );
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'abcde\nfghij\nklmno');
   });
   it('Given a rectangle When killed and yanked Then its text is restored', async function () {
     const document = await vscode.workspace.openTextDocument({

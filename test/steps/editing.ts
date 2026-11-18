@@ -211,6 +211,12 @@ When('I try moving forward a word', function () {
 When('I kill the next word', function () {
   this.state.killWord(1);
 });
+When('I set the goal column', function () {
+  this.state.setGoalColumn(false);
+});
+When('I clear the goal column', function () {
+  this.state.setGoalColumn(true);
+});
 When('I move down {int} line', function (count) {
   this.state.vertical(count);
 });

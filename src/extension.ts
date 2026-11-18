@@ -9,6 +9,7 @@ import {
   KillRing,
   MarkParagraphError,
   OpenLineError,
+  PersistentGoal,
   PrefixArgument,
   RegionCaseError,
   TabStopError,
@@ -36,6 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const search = new SearchController();
   context.subscriptions.push(search);
   const states = new WeakMap<vscode.TextEditor, EditorState>();
+  const goals = new WeakMap<vscode.TextDocument, PersistentGoal>();
   const registers = new Registers();
   let killedRectangle: string[] = [];
   let queue: Promise<void> = Promise.resolve();
@@ -49,7 +51,12 @@ export function activate(context: vscode.ExtensionContext): void {
     let state = states.get(editor);
     const point = editor.document.offsetAt(editor.selection.active);
     if (!state) {
-      state = new EditorState(editor.document.getText(), point, ring);
+      let goal = goals.get(editor.document);
+      if (!goal) {
+        goal = {};
+        goals.set(editor.document, goal);
+      }
+      state = new EditorState(editor.document.getText(), point, ring, goal);
       states.set(editor, state);
     } else state.sync(editor.document.getText(), point);
     return state;
@@ -251,6 +258,8 @@ export function activate(context: vscode.ExtensionContext): void {
     previousLine: (state, count, _hasPrefix, _lineEnding, tabSize) =>
       state.vertical(-count, tabSize),
     nextLine: (state, count, _hasPrefix, _lineEnding, tabSize) => state.vertical(count, tabSize),
+    setGoalColumn: (state, _count, hasPrefix, _lineEnding, tabSize) =>
+      state.setGoalColumn(hasPrefix, tabSize),
     beginningOfLine: (state, count) => state.lineBoundary(false, count),
     endOfLine: (state, count) => state.lineBoundary(true, count),
     backToIndentation: (state) => state.backToIndentation(),
@@ -793,7 +802,12 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   const registerCommand = (
     name: string,
-    action: (state: EditorState, character: string, count: number) => (() => void) | void,
+    action: (
+      state: EditorState,
+      character: string,
+      count: number,
+      hasPrefix: boolean,
+    ) => (() => void) | void,
   ): void => {
     context.subscriptions.push(
       vscode.commands.registerCommand(`emacscode.${name}`, async (supplied?: string) => {
@@ -801,6 +815,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!editor) return;
         const version = editor.document.version;
         const selection = editor.selection;
+        const hasPrefix = prefix.pending;
         const count = prefix.consume();
         contextUpdate();
         const character =
@@ -823,7 +838,7 @@ export function activate(context: vscode.ExtensionContext): void {
           editor,
           (state) => {
             Registers.validateName(character);
-            return action(state, character, count);
+            return action(state, character, count, hasPrefix);
           },
           { version, selection },
         );
@@ -835,8 +850,19 @@ export function activate(context: vscode.ExtensionContext): void {
     const text = state.text.slice(start, end);
     return () => registers.setText(character, text);
   });
+  registerCommand('copyRectangleToRegister', (state, character, _count, hasPrefix) => {
+    const [start, end] = state.regionBounds();
+    const result = editRectangle(state.text, start, end, hasPrefix ? 'delete' : 'copy');
+    if (hasPrefix) state.applyText(result.text, result.point);
+    return () => registers.setRectangle(character, result.rows);
+  });
   registerCommand('insertRegister', (state, character) => {
     const value = registers.read(character);
+    if (value.kind === 'rectangle') {
+      const result = yankRectangle(state.text, state.point, value.rows);
+      state.applyText(result.text, result.point);
+      return;
+    }
     const text = value.kind === 'text' ? value.text : String(value.value);
     const lineEnding =
       vscode.window.activeTextEditor?.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';

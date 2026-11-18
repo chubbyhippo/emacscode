@@ -683,6 +683,20 @@ Feature: Emacs editing state
     When I move forward 1 word
     Then point is 5
 
+  @SC-persistent-goal
+  Scenario: A persistent goal survives horizontal movement until cleared
+    Given text "abcde\nx\n0123456789" at position 4
+    When I set the goal column
+    And I move to the beginning of the line
+    And I move down 1 line
+    Then point is 7
+    When I move down 1 line
+    Then point is 12
+    When I clear the goal column
+    And I move to the beginning of the line
+    And I move up 1 line
+    Then point is 6
+
   @SC-vertical-tabs-goal
   Scenario: Vertical movement retains a tab-expanded goal across short CRLF lines
     Given text "a\tb\r\nshort\r\n0123456789" at position 2

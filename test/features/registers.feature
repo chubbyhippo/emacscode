@@ -4,6 +4,13 @@ Feature: Text and number registers
     When I store text "hello" in register "a"
     Then register "a" contains text "hello"
 
+  Scenario: A rectangle register retains its rows and rejects numeric operations
+    Given a fresh register collection
+    When I store rectangle rows "bc" and "gh" in register "r"
+    And I try to increment register "r" by 1
+    Then a register error is reported
+    And register "r" contains rectangle rows "bc" and "gh"
+
   Scenario: An unset number can be incremented
     Given a fresh register collection
     When I increment register "n" by 3
