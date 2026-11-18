@@ -6,7 +6,10 @@
                   ("ALPHA Albatross al" 18 ("M-/" "M-/"))
                   ("alpha beta al" 13 ("M-2 M-/"))
                   ("al alpha alpine" 2 ("M-- M-/" "M-/"))
-                  ("nothing z" 9 ("M-/" "M-/"))))
+                  ("nothing z" 9 ("M-/" "M-/"))
+                  ("alpha alpine al" 15 ("M-0 M-/" "M-/"))
+                  ("al alpha alpine" 2 ("M-0 M-/" "M-/"))
+                  ("alpha al alpine" 8 ("M-0 M-/" "M-/"))))
     (with-temp-buffer
       (fundamental-mode)
       (transient-mark-mode 1)
@@ -19,6 +22,7 @@
             (condition-case err
                 (let ((this-command 'dabbrev-expand)
                       (current-prefix-arg (cond ((equal sequence "M-2 M-/") 2)
+                                                ((equal sequence "M-0 M-/") 0)
                                                 ((equal sequence "M-- M-/") -1)
                                                 (t nil))))
                   (call-interactively 'dabbrev-expand)

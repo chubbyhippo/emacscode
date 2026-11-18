@@ -272,6 +272,13 @@ When('I expand an abbreviation', function () {
     this.error = error;
   }
 });
+When('I expand an abbreviation with prefix {int}', function (count) {
+  try {
+    this.state.expandAbbreviation(count, true);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I insert quoted {string} {int} times', function (value, count) {
   try {
     this.state.quotedInsert(unescape(value), count);

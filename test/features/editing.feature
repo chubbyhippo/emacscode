@@ -245,6 +245,24 @@ Feature: Emacs editing state
     When I expand an abbreviation
     Then the text is "alphabet alpha ALPHABET"
 
+  @SC-dabbrev-zero-forward
+  Scenario: A zero prefix searches forward when there is no preceding match
+    Given text "al alpha alpine" at position 2
+    When I expand an abbreviation with prefix 0
+    Then the text is "alpha alpha alpine"
+    And point is 5
+    When I expand an abbreviation
+    Then the text is "alpine alpha alpine"
+    And point is 6
+
+  @SC-dabbrev-zero-backward
+  Scenario: A zero prefix prefers preceding matches and then searches forward
+    Given text "alpha al alpine" at position 8
+    When I expand an abbreviation with prefix 0
+    Then the text is "alpha alpha alpine"
+    When I expand an abbreviation
+    Then the text is "alpha alpine alpine"
+
   @SC-quoted-insert
   Scenario: Insert a quoted character repeatedly
     Given text "ab" at position 1

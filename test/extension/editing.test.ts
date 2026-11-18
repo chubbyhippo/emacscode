@@ -554,6 +554,22 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'alpha alpha');
   });
+  it('Given a zero abbreviation prefix Then forward matches cycle and undo restores them', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'al alpha alpine',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'alpha alpha alpine');
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'alpine alpha alpine');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'alpha alpha alpine');
+  });
   it('Given fill input and an active region Then unsupported justification preserves the selection', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one  two three',

@@ -1117,7 +1117,8 @@ export class EditorState {
       const words = [...this.text.matchAll(/[\p{L}\p{N}_]+/gu)];
       const backward = words.filter((word) => word.index! < start).reverse();
       const forward = words.filter((word) => word.index! >= this.point);
-      const ordered = count < 0 ? forward : hasPrefix ? backward : [...backward, ...forward];
+      const ordered =
+        count < 0 ? forward : hasPrefix && count > 0 ? backward : [...backward, ...forward];
       const lower = prefix.toLowerCase();
       const caseExpansion = (value: string): string => {
         if (prefix === prefix.toUpperCase() && prefix !== lower) return value.toUpperCase();

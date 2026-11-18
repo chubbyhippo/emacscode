@@ -18,7 +18,13 @@ for (const expected of cases) {
   const state = new EditorState(expected.input, expected.start, new KillRing());
   for (const step of expected.steps) {
     const hasPrefix = step.sequence !== 'M-/';
-    const count = step.sequence.startsWith('M--') ? -1 : step.sequence.startsWith('M-2') ? 2 : 1;
+    const count = step.sequence.startsWith('M--')
+      ? -1
+      : step.sequence.startsWith('M-2')
+        ? 2
+        : step.sequence.startsWith('M-0')
+          ? 0
+          : 1;
     let failed = false;
     try {
       state.expandAbbreviation(count, hasPrefix);
