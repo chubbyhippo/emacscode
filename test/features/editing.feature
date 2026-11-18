@@ -484,6 +484,31 @@ Feature: Emacs editing state
     Then point is 10 and mark is 2
     And the text is "a\tb\r\nshort\r\n0123456789"
 
+  @SC-vertical-boundary-end
+  Scenario: Oversized downward movement signals an error and preserves the mark
+    Given text "abc\r\nx" at position 2
+    When I set the mark
+    And I try moving vertically 3 lines
+    Then an error is reported
+    And point is 6 and mark is 2
+    And the region is active
+    And the text is "abc\r\nx"
+    When I move up 1 line
+    Then point is 2 and mark is 2
+    And the region is active
+
+  @SC-vertical-boundary-start
+  Scenario: Oversized upward movement signals an error and preserves the mark
+    Given text "abc\r\nx" at position 6
+    When I set the mark
+    And I try moving vertically -3 lines
+    Then an error is reported
+    And point is 0 and mark is 6
+    And the region is active
+    When I move down 1 line
+    Then point is 6 and mark is 6
+    And the region is active
+
   @SC-vertical-tabs-crossing
   Scenario: A target inside a tab stops after the tab
     Given text "abc\n\txyz" at position 2

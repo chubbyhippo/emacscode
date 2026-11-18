@@ -298,7 +298,7 @@ export class EditorState {
           this.point = this.text.length;
           this.goalColumn = goal;
           this.done('vertical');
-          return;
+          throw new CharacterBoundaryError('end-of-buffer');
         }
         lineStart = end + 1;
       } else {
@@ -306,7 +306,7 @@ export class EditorState {
           this.point = 0;
           this.goalColumn = goal;
           this.done('vertical');
-          return;
+          throw new CharacterBoundaryError('beginning-of-buffer');
         }
         lineStart = lineStart <= 1 ? 0 : this.text.lastIndexOf('\n', lineStart - 2) + 1;
       }

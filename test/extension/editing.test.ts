@@ -472,6 +472,25 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.cancel');
     assert.equal(document.getText(), 'one\ntwo\nthree\nfour\nfive');
   });
+  it('Given an oversized vertical prefix Then point reaches the boundary, the mark survives and the prefix resets', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abc\nx',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit3');
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 1]);
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [0, 2]);
+    await vscode.commands.executeCommand('emacscode.previousLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 2]);
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [0, 2]);
+    assert.equal(document.getText(), 'abc\nx');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given tabbed lines and an active mark When moving vertically Then the editor tab size determines the goal column', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'a\tb\nxy\n0123456789\n\tend',

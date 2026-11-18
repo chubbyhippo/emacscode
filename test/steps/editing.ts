@@ -183,6 +183,13 @@ When('I move down {int} line', function (count) {
 When('I move up {int} line', function (count) {
   this.state.vertical(-count);
 });
+When('I try moving vertically {int} lines', function (count) {
+  try {
+    this.state.vertical(count);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I add an older kill {string}', function (text) {
   this.ring.add(unescape(text), 'forward', false);
 });

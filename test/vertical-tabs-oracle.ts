@@ -17,22 +17,27 @@ const results = JSON.parse(
 );
 let checked = 0;
 for (const expected of results) {
-  if (expected.failed) continue;
   for (const crlf of [false, true]) {
     const translate = (offset: number): number =>
       offset + (crlf ? (expected.text.slice(0, offset).match(/\n/g) ?? []).length : 0);
     const text = crlf ? expected.text.replace(/\n/g, '\r\n') : expected.text;
     const state = new EditorState(text, translate(expected.start), new KillRing());
     state.setMark();
-    for (const key of expected.keys.split(' '))
-      state.vertical(key === 'C-n' ? 1 : -1, expected.tabSize);
+    let failed = false;
+    try {
+      for (const key of expected.keys.split(' '))
+        state.vertical(key === 'C-n' ? 1 : -1, expected.tabSize);
+    } catch {
+      failed = true;
+    }
     assert.deepEqual(
-      { point: state.point, mark: state.mark, active: state.active, text: state.text },
+      { point: state.point, mark: state.mark, active: state.active, text: state.text, failed },
       {
         point: translate(expected.point),
         mark: translate(expected.mark),
         active: expected.active,
         text,
+        failed: expected.failed,
       },
       `${JSON.stringify(expected)} CRLF=${crlf}`,
     );
@@ -40,5 +45,5 @@ for (const expected of results) {
   }
 }
 console.log(
-  `${checked} successful tab-aware vertical movement cases matched Emacs 31.1 and CRLF equivalents`,
+  `${checked} tab-aware vertical movement comparisons, including failures, matched Emacs 31.1 and CRLF equivalents`,
 );

@@ -6,6 +6,7 @@ const tests = [
   'oracle.js',
   'movement-oracle.js',
   'vertical-tabs-oracle.js',
+  'vertical-boundary-oracle.js',
   'character-boundary-oracle.js',
   'delete-character-oracle.js',
   'backward-delete-oracle.js',
