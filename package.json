@@ -120,6 +120,14 @@
         "title": "emacscode: forwardSexp"
       },
       {
+        "command": "emacscode.beginningOfDefun",
+        "title": "emacscode: beginningOfDefun"
+      },
+      {
+        "command": "emacscode.endOfDefun",
+        "title": "emacscode: endOfDefun"
+      },
+      {
         "command": "emacscode.backwardList",
         "title": "emacscode: backwardList"
       },
@@ -144,6 +152,22 @@
         "title": "emacscode: scrollBackward"
       },
       {
+        "command": "emacscode.scrollOtherForward",
+        "title": "emacscode: scrollOtherForward"
+      },
+      {
+        "command": "emacscode.scrollOtherBackward",
+        "title": "emacscode: scrollOtherBackward"
+      },
+      {
+        "command": "emacscode.scrollLeft",
+        "title": "emacscode: scrollLeft"
+      },
+      {
+        "command": "emacscode.scrollRight",
+        "title": "emacscode: scrollRight"
+      },
+      {
         "command": "emacscode.recenter",
         "title": "emacscode: recenter"
       },
@@ -162,6 +186,34 @@
       {
         "command": "emacscode.gotoLine",
         "title": "emacscode: gotoLine"
+      },
+      {
+        "command": "emacscode.gotoSymbol",
+        "title": "emacscode: gotoSymbol"
+      },
+      {
+        "command": "emacscode.nextDiagnostic",
+        "title": "emacscode: nextDiagnostic"
+      },
+      {
+        "command": "emacscode.previousDiagnostic",
+        "title": "emacscode: previousDiagnostic"
+      },
+      {
+        "command": "emacscode.navigateBack",
+        "title": "emacscode: navigateBack"
+      },
+      {
+        "command": "emacscode.navigateForward",
+        "title": "emacscode: navigateForward"
+      },
+      {
+        "command": "emacscode.gotoDefinition",
+        "title": "emacscode: gotoDefinition"
+      },
+      {
+        "command": "emacscode.gotoReferences",
+        "title": "emacscode: gotoReferences"
       },
       {
         "command": "emacscode.upcaseWord",
@@ -204,6 +256,10 @@
         "title": "emacscode: markWord"
       },
       {
+        "command": "emacscode.markSexp",
+        "title": "emacscode: markSexp"
+      },
+      {
         "command": "emacscode.markParagraph",
         "title": "emacscode: markParagraph"
       },
@@ -232,6 +288,10 @@
         "title": "emacscode: killWord"
       },
       {
+        "command": "emacscode.killSexp",
+        "title": "emacscode: killSexp"
+      },
+      {
         "command": "emacscode.backwardKillWord",
         "title": "emacscode: backwardKillWord"
       },
@@ -250,6 +310,26 @@
       {
         "command": "emacscode.tabToTabStop",
         "title": "emacscode: tabToTabStop"
+      },
+      {
+        "command": "emacscode.fillParagraph",
+        "title": "emacscode: fillParagraph"
+      },
+      {
+        "command": "emacscode.expandAbbreviation",
+        "title": "emacscode: expandAbbreviation"
+      },
+      {
+        "command": "emacscode.newlineIndent",
+        "title": "emacscode: newlineIndent"
+      },
+      {
+        "command": "emacscode.comment",
+        "title": "emacscode: comment"
+      },
+      {
+        "command": "emacscode.indentRegion",
+        "title": "emacscode: indentRegion"
       },
       {
         "command": "emacscode.deleteHorizontalSpace",
@@ -288,6 +368,10 @@
         "title": "emacscode: transposeWords"
       },
       {
+        "command": "emacscode.transposeSexps",
+        "title": "emacscode: transposeSexps"
+      },
+      {
         "command": "emacscode.transposeLines",
         "title": "emacscode: transposeLines"
       },
@@ -302,6 +386,10 @@
       {
         "command": "emacscode.cancel",
         "title": "emacscode: cancel"
+      },
+      {
+        "command": "emacscode.quotedInsert",
+        "title": "emacscode: quotedInsert"
       },
       {
         "command": "emacscode.searchForward",
@@ -482,6 +570,16 @@
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
+        "key": "ctrl+alt+a",
+        "command": "emacscode.beginningOfDefun",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+e",
+        "command": "emacscode.endOfDefun",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
         "key": "ctrl+alt+p",
         "command": "emacscode.backwardList",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
@@ -512,6 +610,26 @@
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
+        "key": "ctrl+alt+v",
+        "command": "emacscode.scrollOtherForward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+shift+v",
+        "command": "emacscode.scrollOtherBackward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x shift+,",
+        "command": "emacscode.scrollLeft",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x shift+.",
+        "command": "emacscode.scrollRight",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
         "key": "ctrl+l",
         "command": "emacscode.recenter",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
@@ -539,6 +657,56 @@
       {
         "key": "alt+g alt+g",
         "command": "emacscode.gotoLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g i",
+        "command": "emacscode.gotoSymbol",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g n",
+        "command": "emacscode.nextDiagnostic",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g alt+n",
+        "command": "emacscode.nextDiagnostic",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g p",
+        "command": "emacscode.previousDiagnostic",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g alt+p",
+        "command": "emacscode.previousDiagnostic",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x `",
+        "command": "emacscode.nextDiagnostic",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+,",
+        "command": "emacscode.navigateBack",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+,",
+        "command": "emacscode.navigateForward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+.",
+        "command": "emacscode.gotoDefinition",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+shift+/",
+        "command": "emacscode.gotoReferences",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
@@ -592,6 +760,11 @@
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
+        "key": "ctrl+alt+shift+2",
+        "command": "emacscode.markSexp",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
         "key": "alt+h",
         "command": "emacscode.markParagraph",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
@@ -627,6 +800,11 @@
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
+        "key": "ctrl+alt+k",
+        "command": "emacscode.killSexp",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
         "key": "alt+backspace",
         "command": "emacscode.backwardKillWord",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
@@ -649,6 +827,31 @@
       {
         "key": "alt+i",
         "command": "emacscode.tabToTabStop",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+q",
+        "command": "emacscode.fillParagraph",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+/",
+        "command": "emacscode.expandAbbreviation",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+j",
+        "command": "emacscode.newlineIndent",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+;",
+        "command": "emacscode.comment",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+\\",
+        "command": "emacscode.indentRegion",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
@@ -697,6 +900,11 @@
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {
+        "key": "ctrl+alt+t",
+        "command": "emacscode.transposeSexps",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
         "key": "ctrl+x ctrl+t",
         "command": "emacscode.transposeLines",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
@@ -714,6 +922,11 @@
       {
         "key": "ctrl+g",
         "command": "emacscode.cancel",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+q",
+        "command": "emacscode.quotedInsert",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

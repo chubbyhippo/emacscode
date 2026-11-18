@@ -174,6 +174,46 @@ Feature: Emacs editing state
     Then point is 6
     And the text is "abc   "
 
+  @SC-sexp-edit
+  Scenario: Mark and kill a balanced expression and yank it back
+    Given text "one (two) three" at position 4
+    When I mark a sexp
+    Then point is 4 and mark is 9
+    And the region is active
+    When I kill a sexp
+    Then the text is "one  three"
+    And the newest kill is "(two)"
+    When I yank
+    Then the text is "one (two) three"
+
+  @SC-sexp-transpose
+  Scenario: Transpose adjacent expressions
+    Given text "(one) (two)" at position 5
+    When I transpose sexps
+    Then the text is "(two) (one)"
+    And point is 11
+
+  @SC-fill-paragraph
+  Scenario: Fill plain text while preserving the paragraph boundary
+    Given text "one two three four\r\n\r\nnext" at position 0
+    When I fill a paragraph to width 9
+    Then the text is "one two\r\nthree\r\nfour\r\n\r\nnext"
+
+  @SC-dabbrev
+  Scenario: Cycle abbreviation expansions in the current buffer
+    Given text "alpha alpine al" at position 15
+    When I expand an abbreviation
+    Then the text is "alpha alpine alpine"
+    When I expand an abbreviation
+    Then the text is "alpha alpine alpha"
+
+  @SC-quoted-insert
+  Scenario: Insert a quoted character repeatedly
+    Given text "ab" at position 1
+    When I insert quoted "x" 3 times
+    Then the text is "axxxb"
+    And point is 4
+
   @SC-goto-character
   Scenario: Go to an Emacs character position across Unicode and CRLF
     Given text "a😀\r\nb" at position 0

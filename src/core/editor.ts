@@ -127,6 +127,8 @@ export class EditorState {
   private yankRange: [number, number] | undefined;
   private goalColumn: number | undefined;
   private goalTabSize: number | undefined;
+  private abbreviation:
+    { prefix: string; start: number; candidates: string[]; index: number } | undefined;
   private spacingCycle:
     { whitespace: string; originalPoint: number; count?: number; step: number } | undefined;
   constructor(
@@ -147,6 +149,7 @@ export class EditorState {
       this.active = false;
       this.yankRange = undefined;
       this.spacingCycle = undefined;
+      this.abbreviation = undefined;
       this.previous = '';
       this.goalColumn = undefined;
       this.goalTabSize = undefined;
@@ -154,6 +157,7 @@ export class EditorState {
     if (this.point !== point) {
       this.previous = '';
       this.spacingCycle = undefined;
+      this.abbreviation = undefined;
       this.yankRange = undefined;
       this.goalColumn = undefined;
     }
@@ -162,6 +166,7 @@ export class EditorState {
   private done(command: string): void {
     this.previous = command;
     if (command !== 'cycle-spacing') this.spacingCycle = undefined;
+    if (command !== 'abbreviation') this.abbreviation = undefined;
     if (command !== 'yank' && command !== 'yank-pop') this.yankRange = undefined;
     if (command !== 'vertical') this.goalColumn = undefined;
   }
@@ -305,6 +310,42 @@ export class EditorState {
   }
   public moveListDepth(count: number, outward: boolean): void {
     this.structuralMove(() => moveListDepth(this.text, this.point, count, outward));
+  }
+  public moveDefun(count: number, end: boolean): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid defun count');
+    const starts: number[] = [];
+    for (let position = 0; position < this.text.length; position++) {
+      if (
+        (position === 0 || this.text[position - 1] === '\n') &&
+        '([{'.includes(this.text[position])
+      )
+        starts.push(position);
+    }
+    let position = this.point;
+    for (let index = 0; index < Math.abs(count); index++) {
+      if (!end) {
+        position =
+          count > 0
+            ? (starts.filter((start) => start < position).pop() ?? 0)
+            : (starts.find((start) => start > position) ?? this.text.length);
+      } else if (count > 0) {
+        const start = starts.filter((candidate) => candidate <= position).pop() ?? starts[0];
+        if (start === undefined) {
+          position = this.text.length;
+          break;
+        }
+        const result = moveStructure(this.text, start, 1);
+        if (result <= position) {
+          const next = starts.find((candidate) => candidate > position);
+          position = next === undefined ? this.text.length : moveStructure(this.text, next, 1);
+        } else position = result;
+      } else {
+        const endings = starts.map((start) => moveStructure(this.text, start, 1));
+        position = endings.filter((candidate) => candidate < position).pop() ?? 0;
+      }
+    }
+    this.point = position;
+    this.done('move');
   }
   public gotoCharacter(position: number): void {
     if (!Number.isSafeInteger(position)) throw new Error('Invalid character position');
@@ -672,6 +713,14 @@ export class EditorState {
     this.active = true;
     this.done('mark-word');
   }
+  public markSexp(count: number, hasPrefix: boolean): void {
+    const extend = this.mark !== undefined && (this.active || this.previous === 'mark-sexp');
+    const origin = extend ? this.mark! : this.point;
+    const distance = hasPrefix ? count : extend && origin < this.point ? -1 : 1;
+    this.mark = moveStructure(this.text, origin, distance);
+    this.active = true;
+    this.done('mark-sexp');
+  }
   public changeRegionCase(kind: 'upcase' | 'downcase'): void {
     if (this.mark === undefined || !this.active) throw new RegionCaseError('No active region');
     const [start, end] = this.regionBounds();
@@ -775,6 +824,10 @@ export class EditorState {
   }
   public killWord(count: number): string {
     const end = this.wordPosition(count);
+    return this.kill(this.point, end, count < 0 ? 'backward' : 'forward');
+  }
+  public killSexp(count: number): string {
+    const end = moveStructure(this.text, this.point, count);
     return this.kill(this.point, end, count < 0 ? 'backward' : 'forward');
   }
   public killSentence(count: number): string {
@@ -1050,6 +1103,76 @@ export class EditorState {
     this.active = false;
     this.done('delete');
   }
+  public expandAbbreviation(): void {
+    if (this.previous !== 'abbreviation' || !this.abbreviation) {
+      const prefix = this.text.slice(0, this.point).match(/[\p{L}\p{N}_]+$/u)?.[0];
+      if (!prefix) throw new Error('No abbreviation at point');
+      const start = this.point - prefix.length;
+      const candidates: string[] = [];
+      const words = [...this.text.matchAll(/[\p{L}\p{N}_]+/gu)];
+      const ordered = [
+        ...words.filter((word) => word.index! < start).reverse(),
+        ...words.filter((word) => word.index! >= this.point),
+      ];
+      for (const word of ordered) {
+        if (word[0] !== prefix && word[0].startsWith(prefix) && !candidates.includes(word[0]))
+          candidates.push(word[0]);
+      }
+      if (!candidates.length) throw new Error('No abbreviation expansion found');
+      this.abbreviation = { prefix, start, candidates, index: 0 };
+    }
+    const cycle = this.abbreviation;
+    if (cycle.index >= cycle.candidates.length)
+      throw new Error('No further abbreviation expansion');
+    const replacement = cycle.candidates[cycle.index++];
+    this.replace(cycle.start, this.point, replacement);
+    this.active = false;
+    this.done('abbreviation');
+  }
+  public fillParagraph(width = 70, lineEnding = '\n'): void {
+    if (!Number.isSafeInteger(width) || width < 1) throw new Error('Invalid fill column');
+    const lines = this.text.split(/\r?\n/);
+    const starts: number[] = [];
+    let offset = 0;
+    for (const line of lines) {
+      starts.push(offset);
+      offset += line.length + lineEnding.length;
+    }
+    let line = 0;
+    while (line + 1 < starts.length && starts[line + 1] <= this.point) line++;
+    if (/^[ \t]*$/.test(lines[line])) {
+      this.done('fill');
+      return;
+    }
+    let first = line;
+    let last = line;
+    while (first > 0 && !/^[ \t]*$/.test(lines[first - 1])) first--;
+    while (last + 1 < lines.length && !/^[ \t]*$/.test(lines[last + 1])) last++;
+    const start = starts[first];
+    const end = starts[last] + lines[last].length;
+    const original = this.text.slice(start, end);
+    if (/[^\x20-\x7e\t\r\n]/.test(original)) throw new Error('Unsupported fill characters');
+    const words = original.trim().split(/[ \t\r\n]+/);
+    const output: string[] = [];
+    let current = '';
+    for (const word of words) {
+      if (current && current.length + 1 + word.length > width) {
+        output.push(current);
+        current = word;
+      } else current += (current ? ' ' : '') + word;
+    }
+    if (current) output.push(current);
+    const value = output.join(lineEnding);
+    let logicalOffset = Math.min(this.point - start, value.length);
+    if (logicalOffset > 0 && value[logicalOffset - 1] === '\r' && value[logicalOffset] === '\n')
+      logicalOffset--;
+    if (original !== value) {
+      this.replace(start, end, value);
+      this.point = start + logicalOffset;
+      this.active = false;
+    }
+    this.done('fill');
+  }
   public tabToTabStop(tabSize = 8, insertSpaces = false): void {
     if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
     const lineStart = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
@@ -1157,6 +1280,57 @@ export class EditorState {
       this.mark = transform(originalPoint);
     } else this.point = count > 0 ? second[0] : second[0] + firstEnd - firstStart;
     this.active = false;
+    this.done('transpose');
+  }
+  public transposeSexps(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
+    const originalPoint = this.point;
+    const originalMark = this.mark;
+    const pair = (origin: number, distance: number): [number, number] => {
+      const first = moveStructure(this.text, origin, distance);
+      return [first, moveStructure(this.text, first, -distance)];
+    };
+    let first: [number, number];
+    let second: [number, number];
+    if (count === 0) {
+      if (this.mark === undefined) throw new Error('No mark set');
+      first = pair(this.point, 1);
+      second = pair(this.mark, 1);
+    } else {
+      first = pair(this.point, -1);
+      second = pair(count > 0 ? first[1] : first[0], count);
+    }
+    let firstStart = Math.min(...first);
+    let firstEnd = Math.max(...first);
+    let secondStart = Math.min(...second);
+    let secondEnd = Math.max(...second);
+    if (firstStart > secondStart) {
+      [firstStart, secondStart] = [secondStart, firstStart];
+      [firstEnd, secondEnd] = [secondEnd, firstEnd];
+    }
+    if (firstStart === firstEnd || secondStart === secondEnd || firstEnd > secondStart)
+      throw new Error('Cannot transpose expressions');
+    const left = this.text.slice(firstStart, firstEnd);
+    const right = this.text.slice(secondStart, secondEnd);
+    const middle = this.text.slice(firstEnd, secondStart);
+    const transform = (position: number): number => {
+      if (position >= firstEnd) position += right.length;
+      if (position > firstEnd) position -= left.length;
+      else if (position >= firstStart) position = firstStart;
+      const boundary = secondStart + right.length - left.length;
+      if (position > boundary) position += left.length;
+      const deletionStart = boundary + left.length;
+      if (position > deletionStart + right.length) position -= right.length;
+      else if (position >= deletionStart) position = deletionStart;
+      return position;
+    };
+    const before = this.text;
+    this.replace(firstStart, secondEnd, right + middle + left);
+    if (originalMark !== undefined) this.mark = transform(originalMark);
+    this.point =
+      count === 0 ? (this.mark ?? originalPoint) : count > 0 ? second[0] : second[0] + right.length;
+    if (count === 0) this.mark = transform(originalPoint);
+    this.active = count === 0 && this.text === before;
     this.done('transpose');
   }
   public transposeWords(count: number): void {
@@ -1299,6 +1473,23 @@ export class EditorState {
     this.replace(origin, origin, lineEnding.repeat(count));
     this.point = origin;
     this.active = false;
+    this.done('insert');
+  }
+  public quotedInsert(value: string, count: number, lineEnding = '\n'): void {
+    if (
+      Array.from(value).length !== 1 ||
+      !Number.isSafeInteger(count) ||
+      count < 0 ||
+      count > 100000
+    )
+      throw new Error('Invalid quoted character or count');
+    const text = value === '\n' ? lineEnding : value;
+    if (value === '\r' || (value.length === 1 && /[\uD800-\uDFFF]/.test(value)))
+      throw new Error('Unsupported quoted character');
+    if (count > 0) {
+      this.replace(this.point, this.point, text.repeat(count));
+      this.active = false;
+    }
     this.done('insert');
   }
   public insert(value: string): void {

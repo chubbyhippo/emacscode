@@ -252,6 +252,8 @@ export function activate(context: vscode.ExtensionContext): void {
     forwardPage: (state, count) => state.movePage(count),
     backwardSexp: (state, count) => state.moveStructure(-count),
     forwardSexp: (state, count) => state.moveStructure(count),
+    beginningOfDefun: (state, count) => state.moveDefun(count, false),
+    endOfDefun: (state, count) => state.moveDefun(count, true),
     backwardList: (state, count) => state.moveStructure(-count, true),
     forwardList: (state, count) => state.moveStructure(count, true),
     backwardUpList: (state, count) => state.moveListDepth(count, true),
@@ -269,6 +271,7 @@ export function activate(context: vscode.ExtensionContext): void {
       state.bufferBoundary(true, hasPrefix && !rawUniversal ? count : undefined, rawUniversal),
     setMark: (state) => state.setMark(),
     markWord: (state, count, hasPrefix) => state.markWord(count, hasPrefix),
+    markSexp: (state, count, hasPrefix) => state.markSexp(count, hasPrefix),
     markParagraph: (state, count) => state.markParagraph(count),
     exchangePointAndMark: (state, _count, hasPrefix) => state.exchange(hasPrefix),
     markWholeBuffer: (state) => state.selectAll(),
@@ -287,6 +290,9 @@ export function activate(context: vscode.ExtensionContext): void {
     backwardKillWord: (state, count) => {
       state.killWord(-count);
     },
+    killSexp: (state, count) => {
+      state.killSexp(count);
+    },
     killSentence: (state, count) => {
       state.killSentence(count);
     },
@@ -303,9 +309,12 @@ export function activate(context: vscode.ExtensionContext): void {
       state.tabToTabStop(tabSize, insertSpaces),
     cycleSpacing: (state, count, hasPrefix) => state.cycleSpacing(hasPrefix ? count : undefined),
     deleteBlankLines: (state) => state.deleteBlankLines(),
+    fillParagraph: (state, _count, _hasPrefix, lineEnding) => state.fillParagraph(70, lineEnding),
+    expandAbbreviation: (state) => state.expandAbbreviation(),
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
     transposeWords: (state, count) => state.transposeWords(count),
+    transposeSexps: (state, count) => state.transposeSexps(count),
     transposeLines: (state, count, _hasPrefix, lineEnding) =>
       state.transposeLines(count, lineEnding),
     openLine: (state, count, _hasPrefix, lineEnding) => state.openLine(count, lineEnding),
@@ -316,6 +325,151 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   };
   for (const [name, action] of Object.entries(actions)) register(name, action);
+  for (const [name, command, needsRegion] of [
+    ['newlineIndent', 'type', false],
+    ['comment', 'editor.action.commentLine', false],
+    ['indentRegion', 'editor.action.indentLines', true],
+  ] as const) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`emacscode.${name}`, () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        prefix.reset();
+        void contextUpdate();
+        queue = queue
+          .then(async () => {
+            if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+              throw new Error('The original editor is no longer active');
+            if (editor.selections.length !== 1)
+              throw new Error('emacscode supports one cursor at a time');
+            const state = stateFor(editor);
+            if (needsRegion) state.regionBounds();
+            state.breakCommandChain();
+            if (name === 'newlineIndent')
+              await vscode.commands.executeCommand(command, { text: '\n' });
+            else await vscode.commands.executeCommand(command);
+            states.delete(editor);
+            await contextUpdate();
+          })
+          .catch((error) => {
+            void vscode.window.showWarningMessage(
+              `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        return queue;
+      }),
+    );
+  }
+  for (const [name, command] of [
+    ['navigateBack', 'workbench.action.navigateBack'],
+    ['navigateForward', 'workbench.action.navigateForward'],
+    ['gotoDefinition', 'editor.action.revealDefinition'],
+    ['gotoReferences', 'editor.action.goToReferences'],
+    ['nextDiagnostic', 'editor.action.marker.nextInFiles'],
+    ['previousDiagnostic', 'editor.action.marker.prevInFiles'],
+    ['gotoSymbol', 'workbench.action.gotoSymbol'],
+  ] as const) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`emacscode.${name}`, async () => {
+        prefix.reset();
+        const editor = vscode.window.activeTextEditor;
+        if (editor) stateFor(editor).breakCommandChain();
+        await contextUpdate();
+        await vscode.commands.executeCommand(command);
+      }),
+    );
+  }
+  for (const [name, direction] of [
+    ['scrollOtherForward', 1],
+    ['scrollOtherBackward', -1],
+  ] as const) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`emacscode.${name}`, () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        const hasPrefix = prefix.pending;
+        const count = prefix.consume() * direction;
+        void contextUpdate();
+        queue = queue
+          .then(async () => {
+            if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+              throw new Error('The original editor is no longer active');
+            const other = vscode.window.visibleTextEditors.find(
+              (candidate) => candidate !== editor && candidate.viewColumn !== editor.viewColumn,
+            );
+            if (!other || other.viewColumn === undefined)
+              throw new Error('No other visible text editor');
+            if (!count) return;
+            let focusedOther: vscode.TextEditor | undefined;
+            try {
+              focusedOther = await vscode.window.showTextDocument(other.document, {
+                viewColumn: other.viewColumn,
+                preserveFocus: false,
+                preview: false,
+              });
+              if (vscode.window.activeTextEditor !== focusedOther)
+                throw new Error('The target editor is no longer active');
+              await vscode.commands.executeCommand('editorScroll', {
+                to: count > 0 ? 'down' : 'up',
+                by: hasPrefix ? 'line' : 'page',
+                value: hasPrefix ? Math.abs(count) : 1,
+                revealCursor: false,
+              });
+            } finally {
+              if (
+                vscode.window.activeTextEditor === focusedOther &&
+                !editor.document.isClosed &&
+                editor.viewColumn !== undefined
+              )
+                await vscode.window.showTextDocument(editor.document, {
+                  viewColumn: editor.viewColumn,
+                  preserveFocus: false,
+                  preview: false,
+                });
+            }
+          })
+          .catch((error) => {
+            void vscode.window.showWarningMessage(
+              `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        return queue;
+      }),
+    );
+  }
+  for (const [name, direction] of [
+    ['scrollLeft', 1],
+    ['scrollRight', -1],
+  ] as const) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`emacscode.${name}`, () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        const hasPrefix = prefix.pending;
+        const count = prefix.consume() * direction;
+        void contextUpdate();
+        queue = queue
+          .then(async () => {
+            if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+              throw new Error('The original editor is no longer active');
+            if (!count) return;
+            stateFor(editor).breakCommandChain();
+            await vscode.commands.executeCommand('editorScroll', {
+              to: count > 0 ? 'right' : 'left',
+              by: hasPrefix ? 'column' : 'halfPage',
+              value: hasPrefix ? Math.abs(count) : 1,
+              revealCursor: false,
+            });
+          })
+          .catch((error) => {
+            void vscode.window.showWarningMessage(
+              `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        return queue;
+      }),
+    );
+  }
   for (const [name, direction] of [
     ['scrollForward', 1],
     ['scrollBackward', -1],
@@ -533,6 +687,35 @@ export function activate(context: vscode.ExtensionContext): void {
         version,
         selection,
       });
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('emacscode.quotedInsert', async (supplied?: string) => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      const version = editor.document.version;
+      const selection = editor.selection;
+      const count = prefix.consume();
+      void contextUpdate();
+      const value =
+        supplied ??
+        (await vscode.window.showInputBox({
+          prompt: 'Quoted character (press Enter to confirm)',
+          validateInput: (input) =>
+            Array.from(input).length === 1 ? undefined : 'Enter one character',
+        }));
+      if (value === undefined) return;
+      return runSpecial(
+        editor,
+        (state) => {
+          state.quotedInsert(
+            value,
+            count,
+            editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+          );
+        },
+        { version, selection },
+      );
     }),
   );
   context.subscriptions.push(

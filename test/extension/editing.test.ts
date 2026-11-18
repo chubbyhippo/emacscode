@@ -501,6 +501,63 @@ describe('emacscode editor behavior', function () {
     assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [0, 0]);
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given structural editing When invoked Then text, ring and undo remain coherent', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one (two) three',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 4);
+    editor.selection = new vscode.Selection(position, position);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.markSexp');
+      assert.equal(document.getText(editor.selection), '(two)');
+      await vscode.commands.executeCommand('emacscode.killSexp');
+      assert.equal(document.getText(), 'one  three');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(document.getText(), 'one (two) three');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), 'one  three');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
+  it('Given quoted input and abbreviation When invoked Then edits are undoable', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha al',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 8);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'alpha alpha');
+    await vscode.commands.executeCommand('emacscode.quotedInsert', '!');
+    assert.equal(document.getText(), 'alpha alpha!');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'alpha alpha');
+  });
+  it('Given newline and indentation adapters Then editing and undo remain functional', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha beta',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 5);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.newlineIndent');
+    const lineEnding = document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
+    assert.equal(document.getText(), `alpha${lineEnding} beta`);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardWord');
+    await vscode.commands.executeCommand('emacscode.indentRegion');
+    assert.notEqual(document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'alpha beta');
+  });
   it('Given viewport movement When scrolling and recentering Then the mark and prefix remain coherent', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: Array.from({ length: 100 }, (_, index) => `line ${index}`).join('\n'),

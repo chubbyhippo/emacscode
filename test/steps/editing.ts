@@ -237,6 +237,48 @@ When('I mark a paragraph with count {int}', function (count) {
     this.error = error;
   }
 });
+When('I mark a sexp', function () {
+  try {
+    this.state.markSexp(1, false);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I kill a sexp', function () {
+  try {
+    this.state.killSexp(1);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I transpose sexps', function () {
+  try {
+    this.state.transposeSexps(1);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I fill a paragraph to width {int}', function (width) {
+  try {
+    this.state.fillParagraph(width, this.state.text.includes('\r\n') ? '\r\n' : '\n');
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I expand an abbreviation', function () {
+  try {
+    this.state.expandAbbreviation();
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I insert quoted {string} {int} times', function (value, count) {
+  try {
+    this.state.quotedInsert(unescape(value), count);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I mark a word', function () {
   this.state.markWord(1, false);
 });

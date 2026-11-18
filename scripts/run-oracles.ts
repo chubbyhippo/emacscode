@@ -17,6 +17,7 @@ const tests = [
   'goto-line-oracle.js',
   'position-page-oracle.js',
   'structure-oracle.js',
+  'sexp-edit-oracle.js',
   'paragraph-oracle.js',
   'sentence-oracle.js',
   'kill-sentence-oracle.js',
