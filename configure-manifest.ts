@@ -35,6 +35,8 @@ const bindings = [
   ['alt+u', 'upcaseWord'],
   ['alt+l', 'downcaseWord'],
   ['alt+c', 'capitalizeWord'],
+  ['ctrl+x ctrl+u', 'upcaseRegion'],
+  ['ctrl+x ctrl+l', 'downcaseRegion'],
   ['alt+m', 'backToIndentation'],
   ['alt+shift+,', 'beginningOfBuffer'],
   ['alt+shift+.', 'endOfBuffer'],

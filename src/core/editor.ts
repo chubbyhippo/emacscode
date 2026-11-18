@@ -26,6 +26,8 @@ export class ColumnMovementError extends Error {
   }
 }
 
+export class RegionCaseError extends Error {}
+
 export class OpenLineError extends Error {
   constructor() {
     super('Repetition argument has to be non-negative');
@@ -669,6 +671,27 @@ export class EditorState {
     this.mark = this.wordPosition(distance, origin);
     this.active = true;
     this.done('mark-word');
+  }
+  public changeRegionCase(kind: 'upcase' | 'downcase'): void {
+    if (this.mark === undefined || !this.active) throw new RegionCaseError('No active region');
+    const [start, end] = this.regionBounds();
+    const splitCharacter = (offset: number): boolean =>
+      offset > 0 &&
+      offset < this.text.length &&
+      ((this.text[offset - 1] === '\r' && this.text[offset] === '\n') ||
+        (/[\uD800-\uDBFF]/.test(this.text[offset - 1]) &&
+          /[\uDC00-\uDFFF]/.test(this.text[offset])));
+    if (splitCharacter(start) || splitCharacter(end))
+      throw new RegionCaseError('Region is not at a character boundary');
+    const original = this.text.slice(start, end);
+    const converted = kind === 'upcase' ? original.toUpperCase() : original.toLowerCase();
+    if (converted.length !== original.length)
+      throw new RegionCaseError('Case conversion changes character length');
+    if (start !== end) {
+      this.text = this.text.slice(0, start) + converted + this.text.slice(end);
+      this.active = false;
+    }
+    this.done('case');
   }
   public changeWordCase(kind: 'upcase' | 'downcase' | 'capitalize', count: number): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid word count');

@@ -266,6 +266,13 @@ When('I zap {int} occurrences of {string}', function (count, character) {
 When('I {word} {int} words', function (kind, count) {
   this.state.changeWordCase(kind, count);
 });
+When('I {word} the active region', function (kind) {
+  try {
+    this.state.changeRegionCase(kind);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I transpose words with count {int}', function (count) {
   try {
     this.state.transposeWords(count);

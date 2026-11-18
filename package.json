@@ -176,6 +176,14 @@
         "title": "emacscode: capitalizeWord"
       },
       {
+        "command": "emacscode.upcaseRegion",
+        "title": "emacscode: upcaseRegion"
+      },
+      {
+        "command": "emacscode.downcaseRegion",
+        "title": "emacscode: downcaseRegion"
+      },
+      {
         "command": "emacscode.backToIndentation",
         "title": "emacscode: backToIndentation"
       },
@@ -546,6 +554,16 @@
       {
         "key": "alt+c",
         "command": "emacscode.capitalizeWord",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+u",
+        "command": "emacscode.upcaseRegion",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+l",
+        "command": "emacscode.downcaseRegion",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

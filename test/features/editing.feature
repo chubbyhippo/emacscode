@@ -820,6 +820,46 @@ Feature: Emacs editing state
     Then the text is "ONE TWO"
     And point is 7
 
+  @SC-region-case-forward
+  Scenario: Uppercase a marked CRLF region without moving point or mark
+    Given text "one\r\ntwo" at position 0
+    When I set the mark
+    And I move forward 7 character
+    And I upcase the active region
+    Then the text is "ONE\r\nTWO"
+    And point is 8 and mark is 0
+    And the region is inactive
+
+  @SC-region-case-reversed
+  Scenario: Downcase a reversed region
+    Given text "ONE TWO" at position 7
+    When I set the mark
+    And I move backward 3 character
+    And I downcase the active region
+    Then the text is "ONE two"
+    And point is 4 and mark is 7
+    And the region is inactive
+
+  @SC-region-case-empty
+  Scenario: Case conversion of an empty region preserves the active mark
+    Given text "alpha" at position 2
+    When I set the mark
+    And I upcase the active region
+    Then the text is "alpha"
+    And point is 2 and mark is 2
+    And the region is active
+
+  @SC-region-case-reject
+  Scenario: Case expansion is rejected without changing the region
+    Given text "ß" at position 0
+    When I set the mark
+    And I move forward 1 character
+    And I upcase the active region
+    Then an error is reported
+    And the text is "ß"
+    And point is 1 and mark is 0
+    And the region is active
+
   @SC-transpose-lines-forward
   Scenario: Transpose lines across CRLF and retain an inactive mark
     Given text "one\r\ntwo\r\nthree" at position 5

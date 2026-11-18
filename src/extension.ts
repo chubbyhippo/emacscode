@@ -8,6 +8,7 @@ import {
   MarkParagraphError,
   OpenLineError,
   PrefixArgument,
+  RegionCaseError,
   TabStopError,
 } from './core/editor';
 import { StructureMovementError } from './core/structure';
@@ -205,6 +206,7 @@ export function activate(context: vscode.ExtensionContext): void {
                   error instanceof StructureMovementError ||
                   error instanceof CharacterDeletionRangeError ||
                   error instanceof MarkParagraphError ||
+                  error instanceof RegionCaseError ||
                   error instanceof OpenLineError ||
                   error instanceof TabStopError) &&
                 state.text === before
@@ -259,6 +261,8 @@ export function activate(context: vscode.ExtensionContext): void {
     upcaseWord: (state, count) => state.changeWordCase('upcase', count),
     downcaseWord: (state, count) => state.changeWordCase('downcase', count),
     capitalizeWord: (state, count) => state.changeWordCase('capitalize', count),
+    upcaseRegion: (state) => state.changeRegionCase('upcase'),
+    downcaseRegion: (state) => state.changeRegionCase('downcase'),
     beginningOfBuffer: (state, count, hasPrefix, _lineEnding, _tabSize, rawUniversal) =>
       state.bufferBoundary(false, hasPrefix && !rawUniversal ? count : undefined, rawUniversal),
     endOfBuffer: (state, count, hasPrefix, _lineEnding, _tabSize, rawUniversal) =>

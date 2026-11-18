@@ -737,6 +737,39 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'ONE TWO THREE');
   });
+  it('Given an active region When changing case Then point, mark and undo are preserved', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\ntWo',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['ctrl+x ctrl+u', 'upcaseRegion'],
+      ['ctrl+x ctrl+l', 'downcaseRegion'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === key &&
+            binding.command === `emacscode.${command}` &&
+            binding.when.includes('!terminalFocus'),
+        ),
+      );
+    }
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit7');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.upcaseRegion');
+    assert.equal(document.getText(), 'ONE\r\nTWO');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 3]);
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 0]);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one\r\ntWo');
+  });
   it('Given tab-to-stop When invoked with a prefix Then editor indentation settings and undo are respected', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'abc',

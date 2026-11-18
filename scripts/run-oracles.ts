@@ -26,6 +26,7 @@ const tests = [
   'rectangle-oracle.js',
   'zap-oracle.js',
   'word-case-oracle.js',
+  'region-case-oracle.js',
   'transpose-oracle.js',
   'transpose-words-oracle.js',
   'transpose-lines-oracle.js',
