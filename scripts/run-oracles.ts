@@ -9,6 +9,7 @@ const tests = [
   'vertical-boundary-oracle.js',
   'character-boundary-oracle.js',
   'delete-character-oracle.js',
+  'open-line-oracle.js',
   'backward-delete-oracle.js',
   'line-boundary-oracle.js',
   'buffer-boundary-oracle.js',

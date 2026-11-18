@@ -295,6 +295,35 @@ Feature: Emacs editing state
       | a\r\nb | 1     | 3     | 4   |
       |         | 0     | 1     | 0   |
 
+  @SC-open-line-positive
+  Scenario: Opening lines preserves point and moves a later mark
+    Given text "ab\r\ncd" at position 6
+    When I set the mark
+    And I move backward 4 character
+    And I open 2 lines
+    Then the text is "a\r\n\r\nb\r\ncd"
+    And point is 1 and mark is 10
+    And the region is inactive
+
+  @SC-open-line-zero
+  Scenario: A zero line count moves to line end without editing or deactivating the mark
+    Given text "abc\r\ndef" at position 1
+    When I set the mark
+    And I open 0 lines
+    Then the text is "abc\r\ndef"
+    And point is 3 and mark is 1
+    And the region is active
+
+  @SC-open-line-negative
+  Scenario: A negative line count reports an error and preserves the region
+    Given text "abc" at position 1
+    When I set the mark
+    And I open -1 lines
+    Then an error is reported
+    And the text is "abc"
+    And point is 1 and mark is 1
+    And the region is active
+
   @SC-delete-character-boundary
   Scenario Outline: Overshooting character deletion leaves the buffer and region unchanged
     Given text "abc" at position <start>

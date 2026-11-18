@@ -12,6 +12,12 @@ export class MarkParagraphError extends Error {
   }
 }
 
+export class OpenLineError extends Error {
+  constructor() {
+    super('Repetition argument has to be non-negative');
+  }
+}
+
 export class CharacterDeletionRangeError extends Error {
   public readonly code = 'args-out-of-range';
   constructor() {
@@ -1070,6 +1076,19 @@ export class EditorState {
     } else this.mark = originalMark;
     this.active = false;
     this.done('transpose');
+  }
+  public openLine(count: number, lineEnding = '\n'): void {
+    if (!Number.isSafeInteger(count) || count < 0) throw new OpenLineError();
+    if (lineEnding !== '\n' && lineEnding !== '\r\n') throw new Error('Invalid line ending');
+    if (count === 0) {
+      this.lineBoundary(true);
+      return;
+    }
+    const origin = this.point;
+    this.replace(origin, origin, lineEnding.repeat(count));
+    this.point = origin;
+    this.active = false;
+    this.done('insert');
   }
   public insert(value: string): void {
     this.replace(this.point, this.point, value);

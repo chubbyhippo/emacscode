@@ -5,6 +5,7 @@ import {
   EditorState,
   KillRing,
   MarkParagraphError,
+  OpenLineError,
   PrefixArgument,
 } from './core/editor';
 import { SearchController } from './search';
@@ -185,7 +186,8 @@ export function activate(context: vscode.ExtensionContext): void {
               if (
                 (error instanceof CharacterBoundaryError ||
                   error instanceof CharacterDeletionRangeError ||
-                  error instanceof MarkParagraphError) &&
+                  error instanceof MarkParagraphError ||
+                  error instanceof OpenLineError) &&
                 state.text === before
               ) {
                 try {
@@ -269,11 +271,7 @@ export function activate(context: vscode.ExtensionContext): void {
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
     transposeWords: (state, count) => state.transposeWords(count),
-    openLine: (state, count, _hasPrefix, lineEnding) => {
-      const origin = state.point;
-      state.insert(lineEnding.repeat(Math.max(0, count)));
-      state.point = origin;
-    },
+    openLine: (state, count, _hasPrefix, lineEnding) => state.openLine(count, lineEnding),
     cancel: (state) => {
       prefix.reset();
       contextUpdate();

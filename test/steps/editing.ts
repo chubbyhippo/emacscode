@@ -76,6 +76,13 @@ When('I delete {int} characters', function (count) {
     this.error = error;
   }
 });
+When('I open {int} lines', function (count) {
+  try {
+    this.state.openLine(count, this.state.text.includes('\r\n') ? '\r\n' : '\n');
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I delete one character without a prefix', function () {
   try {
     this.state.deleteCharacter(1);

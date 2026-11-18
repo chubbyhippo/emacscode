@@ -137,6 +137,59 @@ describe('emacscode editor behavior', function () {
       provider.dispose();
     }
   });
+  it('Given open-line prefixes Then errors preserve the mark and counted CRLF edits can be undone', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abc\ndef',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.negativeArgument');
+    await vscode.commands.executeCommand('emacscode.openLine');
+    assert.equal(document.getText(), 'abc\r\ndef');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [1, 2],
+    );
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.openLine');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [1, 3],
+    );
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.openLine');
+    assert.equal(document.getText(), 'abc\r\n\r\n\r\ndef');
+    assert.ok(editor.selection.isEmpty);
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 3]);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'abc\r\ndef');
+  });
+  it('Given read-only text When opening a line Then rejection does not modify it and later commands work', async function () {
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-open-readonly',
+      {
+        provideTextDocumentContent: () => 'protected',
+      },
+    );
+    try {
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-open-readonly:/text'),
+      );
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.openLine');
+      assert.equal(document.getText(), 'protected');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      assert.equal(editor.selection.active.character, 1);
+    } finally {
+      provider.dispose();
+    }
+  });
   it('Given Backspace When an active region exists Then the region is deleted and undo restores it', async function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     assert.ok(
