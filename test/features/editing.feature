@@ -108,6 +108,35 @@ Feature: Emacs editing state
     Then an error is reported
     And the text is "alpha"
 
+  @SC-buffer-boundary-numeric
+  Scenario: Numeric buffer movement respects CRLF, Unicode and an active mark
+    Given text "a😀b\r\n猫c\r\nd" at position 0
+    When I set the mark
+    And I move to the beginning of the buffer with numeric prefix 4
+    Then point is 10 and mark is 0
+    And the region is active
+    And the text is "a😀b\r\n猫c\r\nd"
+
+  @SC-buffer-boundary-mark
+  Scenario: Unprefixed buffer movement retains the original point as an inactive mark
+    Given text "alpha beta" at position 5
+    When I move to the beginning of the buffer without a prefix
+    Then point is 0 and mark is 5
+    And the region is inactive
+    When I exchange point and mark
+    Then point is 5 and mark is 0
+    And the region is active
+
+  @SC-buffer-boundary-universal
+  Scenario: A universal prefix preserves an inactive mark
+    Given text "alpha beta" at position 2
+    When I set the mark
+    And I move forward 3 character
+    And I cancel the mark
+    And I move to the end of the buffer with a universal prefix
+    Then point is 10 and mark is 2
+    And the region is inactive
+
   @SC-goto-line
   Scenario Outline: Go to numbered lines while retaining an active mark
     Given text "one\r\ntwo\r\nthree" at position 1

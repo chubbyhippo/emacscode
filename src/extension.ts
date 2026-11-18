@@ -17,6 +17,7 @@ type Action = (
   hasPrefix: boolean,
   lineEnding: string,
   tabSize: number,
+  rawUniversal: boolean,
 ) => void;
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -142,6 +143,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const editor = vscode.window.activeTextEditor;
         if (!editor) return;
         const hasPrefix = prefix.pending;
+        const rawUniversal = prefix.rawUniversal;
         const count = prefix.consume();
         contextUpdate();
         queue = queue
@@ -159,6 +161,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 hasPrefix,
                 editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
                 typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
+                rawUniversal,
               );
               if (state.text !== before && editor.document.isClosed)
                 throw new Error('The document is closed');
@@ -225,8 +228,10 @@ export function activate(context: vscode.ExtensionContext): void {
     upcaseWord: (state, count) => state.changeWordCase('upcase', count),
     downcaseWord: (state, count) => state.changeWordCase('downcase', count),
     capitalizeWord: (state, count) => state.changeWordCase('capitalize', count),
-    beginningOfBuffer: (state) => state.bufferBoundary(false),
-    endOfBuffer: (state) => state.bufferBoundary(true),
+    beginningOfBuffer: (state, count, hasPrefix, _lineEnding, _tabSize, rawUniversal) =>
+      state.bufferBoundary(false, hasPrefix && !rawUniversal ? count : undefined, rawUniversal),
+    endOfBuffer: (state, count, hasPrefix, _lineEnding, _tabSize, rawUniversal) =>
+      state.bufferBoundary(true, hasPrefix && !rawUniversal ? count : undefined, rawUniversal),
     setMark: (state) => state.setMark(),
     markWord: (state, count, hasPrefix) => state.markWord(count, hasPrefix),
     markParagraph: (state, count) => state.markParagraph(count),

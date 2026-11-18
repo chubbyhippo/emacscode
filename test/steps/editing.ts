@@ -158,6 +158,15 @@ When('I kill {int} sentences', function (count) {
 When('I go to line {int}', function (line) {
   this.state.gotoLine(line);
 });
+When('I move to the {word} of the buffer with numeric prefix {int}', function (boundary, count) {
+  this.state.bufferBoundary(boundary === 'end', count);
+});
+When('I move to the {word} of the buffer with a universal prefix', function (boundary) {
+  this.state.bufferBoundary(boundary === 'end', undefined, true);
+});
+When('I move to the {word} of the buffer without a prefix', function (boundary) {
+  this.state.bufferBoundary(boundary === 'end');
+});
 When('I try moving forward a word', function () {
   try {
     this.state.moveWord(1);

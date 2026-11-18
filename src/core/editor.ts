@@ -54,13 +54,16 @@ export class PrefixArgument {
   private value: number | undefined;
   private digits = false;
   private negativeSign = false;
+  private universalOnly = false;
   public universal(): void {
+    this.universalOnly = this.value === undefined || this.universalOnly;
     this.value = this.value === undefined ? 4 : this.value * 4;
     this.negativeSign = this.value < 0;
     this.digits = false;
   }
   public digit(digit: number): void {
     if (!Number.isInteger(digit) || digit < 0 || digit > 9) throw new Error('Invalid digit');
+    this.universalOnly = false;
     if (!this.digits) {
       this.value = this.negativeSign ? -digit : digit;
       this.digits = true;
@@ -69,6 +72,7 @@ export class PrefixArgument {
     }
   }
   public negative(): void {
+    this.universalOnly = false;
     this.negativeSign = !this.negativeSign;
     this.value = this.value === undefined ? -1 : -this.value;
     this.digits = false;
@@ -82,6 +86,10 @@ export class PrefixArgument {
     this.value = undefined;
     this.digits = false;
     this.negativeSign = false;
+    this.universalOnly = false;
+  }
+  public get rawUniversal(): boolean {
+    return this.value !== undefined && this.universalOnly;
   }
   public get pending(): boolean {
     return this.value !== undefined;
@@ -236,8 +244,27 @@ export class EditorState {
     this.point = position;
     this.done('move');
   }
-  public bufferBoundary(end: boolean): void {
-    this.point = end ? this.text.length : 0;
+  public bufferBoundary(end: boolean, count?: number, rawUniversal = false): void {
+    if (count !== undefined && !Number.isSafeInteger(count)) throw new Error('Invalid prefix');
+    if (!rawUniversal && !this.active) this.mark = this.point;
+    if (count === undefined) {
+      this.point = end ? this.text.length : 0;
+    } else {
+      const offsets = [0];
+      for (let position = 0; position < this.text.length;) {
+        position += this.text.startsWith('\r\n', position)
+          ? 2
+          : String.fromCodePoint(this.text.codePointAt(position)!).length;
+        offsets.push(position);
+      }
+      const size = BigInt(offsets.length - 1);
+      const fraction = (size * BigInt(count)) / 10n;
+      const index = end ? size - fraction : fraction + 1n;
+      const bounded = index < 0n ? 0 : index > size ? Number(size) : Number(index);
+      this.point = offsets[bounded];
+      const newline = this.text.indexOf('\n', this.point);
+      this.point = newline < 0 ? this.text.length : newline + 1;
+    }
     this.done('move');
   }
   public gotoLine(line: number): void {

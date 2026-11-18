@@ -448,6 +448,30 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.lineCount, 16);
     });
   }
+  it('Given numeric and universal prefixes When moving across the buffer Then point and the stored mark follow Emacs', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\ntwo\nthree\nfour\nfive',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(1, 1);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.digit4');
+    await vscode.commands.executeCommand('emacscode.beginningOfBuffer');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [3, 0]);
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 1]);
+    await vscode.commands.executeCommand('emacscode.cancel');
+    await vscode.commands.executeCommand('emacscode.universalArgument');
+    await vscode.commands.executeCommand('emacscode.endOfBuffer');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [4, 4]);
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [3, 0]);
+    await vscode.commands.executeCommand('emacscode.cancel');
+    assert.equal(document.getText(), 'one\ntwo\nthree\nfour\nfive');
+  });
   it('Given tabbed lines and an active mark When moving vertically Then the editor tab size determines the goal column', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'a\tb\nxy\n0123456789\n\tend',
