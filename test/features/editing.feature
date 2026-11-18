@@ -20,6 +20,36 @@ Feature: Emacs editing state
     Then point is 0 and mark is 5
     And the region is active
 
+  @SC-exchange-prefixed
+  Scenario: A prefix exchanges point and mark without activating the region
+    Given text "alpha beta" at position 0
+    When I set the mark and move forward 5 characters
+    And I exchange point and mark with a prefix
+    Then point is 0 and mark is 5
+    And the region is inactive
+    When I exchange point and mark
+    Then point is 5 and mark is 0
+    And the region is active
+    And the text is "alpha beta"
+
+  @SC-exchange-inactive
+  Scenario: A prefix exchanges an inactive mark without activating it
+    Given text "alpha beta" at position 0
+    When I set the mark and move forward 5 characters
+    And I cancel the mark
+    And I exchange point and mark with a prefix
+    Then point is 0 and mark is 5
+    And the region is inactive
+
+  @SC-exchange-unset
+  Scenario: A prefixed exchange without a mark leaves the buffer unchanged
+    Given text "alpha beta" at position 2
+    When I exchange point and mark with a prefix
+    Then an error is reported
+    And point is 2
+    And the region is inactive
+    And the text is "alpha beta"
+
   Scenario: An empty region does not remove a line
     Given text "alpha beta" at position 0
     When I set the mark and kill the region

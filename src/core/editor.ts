@@ -144,12 +144,12 @@ export class EditorState {
   public breakCommandChain(): void {
     this.done('other');
   }
-  public exchange(): void {
+  public exchange(hasPrefix = false): void {
     if (this.mark === undefined) throw new Error('No mark set');
     const point = this.point;
     this.point = this.mark;
     this.mark = point;
-    this.active = true;
+    this.active = !hasPrefix;
     this.done('exchange');
   }
   public selectAll(): void {

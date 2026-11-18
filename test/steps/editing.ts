@@ -21,6 +21,13 @@ When('I set the mark and move forward {int} characters', function (count) {
 When('I exchange point and mark', function () {
   this.state.exchange();
 });
+When('I exchange point and mark with a prefix', function () {
+  try {
+    this.state.exchange(true);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I set the mark and kill the region', function () {
   this.state.setMark();
   this.state.region();

@@ -222,7 +222,7 @@ export function activate(context: vscode.ExtensionContext): void {
     setMark: (state) => state.setMark(),
     markWord: (state, count, hasPrefix) => state.markWord(count, hasPrefix),
     markParagraph: (state, count) => state.markParagraph(count),
-    exchangePointAndMark: (state) => state.exchange(),
+    exchangePointAndMark: (state, _count, hasPrefix) => state.exchange(hasPrefix),
     markWholeBuffer: (state) => state.selectAll(),
     killRegion: (state) => {
       state.region();

@@ -1023,6 +1023,29 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.forwardChar');
     assert.ok(editor.selection.isEmpty);
   });
+  it('Given point and mark When exchange has a prefix Then it deactivates the region and consumes the prefix', async function () {
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit5');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.universalArgument');
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.ok(editor.selection.isEmpty);
+    assert.equal(editor.selection.active.character, 0);
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.ok(editor.selection.isEmpty);
+    assert.equal(editor.selection.active.character, 1);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [1, 5],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.ok(editor.selection.isEmpty);
+    assert.equal(editor.selection.active.character, 1);
+    assert.equal(editor.document.getText(), 'alpha beta');
+  });
   it('Given a mark Then ordinary movement keys are scoped to selection commands', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     for (const [key, command] of [

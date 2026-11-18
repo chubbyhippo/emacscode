@@ -31,6 +31,7 @@ const tests = [
   'mark-word-oracle.js',
   'kill-line-oracle.js',
   'region-oracle.js',
+  'exchange-oracle.js',
 ];
 
 async function main() {
