@@ -10,6 +10,7 @@ const tests = [
   'character-boundary-oracle.js',
   'delete-character-oracle.js',
   'open-line-oracle.js',
+  'tab-stop-oracle.js',
   'backward-delete-oracle.js',
   'line-boundary-oracle.js',
   'buffer-boundary-oracle.js',

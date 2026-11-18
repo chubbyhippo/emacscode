@@ -184,6 +184,10 @@
         "title": "emacscode: zapToChar"
       },
       {
+        "command": "emacscode.tabToTabStop",
+        "title": "emacscode: tabToTabStop"
+      },
+      {
         "command": "emacscode.deleteHorizontalSpace",
         "title": "emacscode: deleteHorizontalSpace"
       },
@@ -492,6 +496,11 @@
       {
         "key": "alt+z",
         "command": "emacscode.zapToChar",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+i",
+        "command": "emacscode.tabToTabStop",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

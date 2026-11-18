@@ -662,6 +662,71 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'ONE TWO THREE');
   });
+  it('Given tab-to-stop When invoked with a prefix Then editor indentation settings and undo are respected', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'abc',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    editor.options = { ...editor.options, tabSize: 4, insertSpaces: false };
+    const position = new vscode.Position(0, 3);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) =>
+          binding.key === 'alt+i' &&
+          binding.command === 'emacscode.tabToTabStop' &&
+          binding.when.includes('editorTextFocus') &&
+          binding.when.includes('!terminalFocus'),
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.tabToTabStop');
+    assert.equal(document.getText(), 'abc\t');
+    await vscode.commands.executeCommand('emacscode.backwardChar');
+    assert.equal(editor.selection.active.character, 3);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'abc');
+  });
+  it('Given non-ASCII display columns When tabbing Then text and active selection are preserved', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: '猫x',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 1);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.tabToTabStop');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.equal(document.getText(), '猫x');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [1, 2],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
+  it('Given read-only text When tabbing Then the edit is rejected and the next command works', async function () {
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-tab-readonly',
+      {
+        provideTextDocumentContent: () => 'protected',
+      },
+    );
+    try {
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-tab-readonly:/text'),
+      );
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.tabToTabStop');
+      assert.equal(document.getText(), 'protected');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      assert.equal(editor.selection.active.character, 1);
+    } finally {
+      provider.dispose();
+    }
+  });
   for (const [prefix, expected] of [
     [false, 'leftright'],
     [true, 'left right'],

@@ -37,6 +37,7 @@ const bindings = [
   ['alt+k', 'killSentence'],
   ['ctrl+x backspace', 'backwardKillSentence'],
   ['alt+z', 'zapToChar'],
+  ['alt+i', 'tabToTabStop'],
   ['alt+\\', 'deleteHorizontalSpace'],
   ['alt+space', 'cycleSpacing'],
   ['alt+shift+6', 'deleteIndentation'],

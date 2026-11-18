@@ -916,6 +916,32 @@ Feature: Emacs editing state
     Then the text is "a \r\n  b"
     And point is 4
 
+  @SC-tab-stop-spaces
+  Scenario: Tab to the next stop using spaces and normalize preceding whitespace
+    Given text "a  b" at position 3
+    When I set the mark
+    And I tab to a stop of width 4 using spaces
+    Then the text is "a   b"
+    And point is 4 and mark is 1
+    And the region is inactive
+
+  @SC-tab-stop-tabs
+  Scenario: Tab to the next stop using tabs
+    Given text "abc" at position 3
+    When I tab to a stop of width 4 using tabs
+    Then the text is "abc\t"
+    And point is 4
+
+  @SC-tab-stop-unsupported
+  Scenario: Unsupported display width leaves text and mark intact
+    Given text "猫abc" at position 1
+    When I set the mark
+    And I tab to a stop of width 4 using spaces
+    Then an error is reported
+    And the text is "猫abc"
+    And point is 1 and mark is 1
+    And the region is active
+
   Scenario: Delete whitespace around point
     Given text "left   right" at position 6
     When I delete horizontal whitespace around

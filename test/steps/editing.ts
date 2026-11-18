@@ -268,6 +268,13 @@ When('I cycle spacing with prefix {int}', function (count) {
 When('I delete horizontal whitespace {word}', function (direction) {
   this.state.deleteHorizontalSpace(direction === 'backward');
 });
+When('I tab to a stop of width {int} using {word}', function (size, style) {
+  try {
+    this.state.tabToTabStop(size, style === 'spaces');
+  } catch (error) {
+    this.error = error;
+  }
+});
 Then('point is {int} and mark is {int}', function (point, mark) {
   assert.equal(this.state.point, point);
   assert.equal(this.state.mark, mark);

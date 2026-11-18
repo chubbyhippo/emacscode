@@ -12,6 +12,12 @@ export class MarkParagraphError extends Error {
   }
 }
 
+export class TabStopError extends Error {
+  constructor() {
+    super('Unsupported display column for tab stop');
+  }
+}
+
 export class OpenLineError extends Error {
   constructor() {
     super('Repetition argument has to be non-negative');
@@ -938,6 +944,32 @@ export class EditorState {
     }
     this.active = false;
     this.done('delete');
+  }
+  public tabToTabStop(tabSize = 8, insertSpaces = false): void {
+    if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
+    const lineStart = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
+    const prefix = this.text.slice(lineStart, this.point);
+    if (/[^\x20-\x7e\t]/.test(prefix)) throw new TabStopError();
+    let column = 0;
+    for (const character of prefix) column += character === '\t' ? tabSize - (column % tabSize) : 1;
+    const target = column + tabSize - (column % tabSize);
+    let start = this.point;
+    while (start > lineStart && (this.text[start - 1] === ' ' || this.text[start - 1] === '\t'))
+      start--;
+    if (start !== this.point) this.replace(start, this.point, '');
+    let startColumn = 0;
+    for (const character of this.text.slice(lineStart, start))
+      startColumn += character === '\t' ? tabSize - (startColumn % tabSize) : 1;
+    let value = '';
+    while (!insertSpaces && startColumn + tabSize - (startColumn % tabSize) <= target) {
+      const distance = tabSize - (startColumn % tabSize);
+      value += '\t';
+      startColumn += distance;
+    }
+    value += ' '.repeat(target - startColumn);
+    this.replace(start, start, value);
+    this.active = false;
+    this.done('insert');
   }
   public deleteHorizontalSpace(backwardOnly: boolean): void {
     let start = this.point;

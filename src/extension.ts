@@ -7,6 +7,7 @@ import {
   MarkParagraphError,
   OpenLineError,
   PrefixArgument,
+  TabStopError,
 } from './core/editor';
 import { SearchController } from './search';
 import { Registers } from './core/registers';
@@ -19,6 +20,7 @@ type Action = (
   lineEnding: string,
   tabSize: number,
   rawUniversal: boolean,
+  insertSpaces: boolean,
 ) => void;
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -163,6 +165,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
                 typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
                 rawUniversal,
+                editor.options?.insertSpaces !== false,
               );
               if (state.text !== before && editor.document.isClosed)
                 throw new Error('The document is closed');
@@ -187,7 +190,8 @@ export function activate(context: vscode.ExtensionContext): void {
                 (error instanceof CharacterBoundaryError ||
                   error instanceof CharacterDeletionRangeError ||
                   error instanceof MarkParagraphError ||
-                  error instanceof OpenLineError) &&
+                  error instanceof OpenLineError ||
+                  error instanceof TabStopError) &&
                 state.text === before
               ) {
                 try {
@@ -266,6 +270,8 @@ export function activate(context: vscode.ExtensionContext): void {
     backwardDeleteChar: (state, count, hasPrefix) =>
       state.backwardDeleteCharacter(count, hasPrefix),
     deleteHorizontalSpace: (state, _count, hasPrefix) => state.deleteHorizontalSpace(hasPrefix),
+    tabToTabStop: (state, _count, _hasPrefix, _lineEnding, tabSize, _rawUniversal, insertSpaces) =>
+      state.tabToTabStop(tabSize, insertSpaces),
     cycleSpacing: (state, count, hasPrefix) => state.cycleSpacing(hasPrefix ? count : undefined),
     deleteBlankLines: (state) => state.deleteBlankLines(),
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
