@@ -820,6 +820,30 @@ Feature: Emacs editing state
     Then the text is "ONE TWO"
     And point is 7
 
+  @SC-transpose-lines-forward
+  Scenario: Transpose lines across CRLF and retain an inactive mark
+    Given text "one\r\ntwo\r\nthree" at position 5
+    When I set the mark
+    And I transpose lines with count 1
+    Then the text is "two\r\none\r\nthree"
+    And point is 10
+    And the region is inactive
+
+  @SC-transpose-lines-negative
+  Scenario: Move a previous line backward with a negative count
+    Given text "one\ntwo\nthree\n" at position 14
+    When I transpose lines with count -2
+    Then the text is "three\none\ntwo\n"
+    And point is 6
+
+  @SC-transpose-lines-error
+  Scenario: An invalid transpose leaves the buffer unchanged
+    Given text "one\ntwo\n" at position 0
+    When I transpose lines with count -1
+    Then an error is reported
+    And the text is "one\ntwo\n"
+    And point is 0
+
   @SC-transpose-words
   Scenario: Transpose two words and preserve punctuation
     Given text "one, two three" at position 3

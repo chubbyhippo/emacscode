@@ -1075,6 +1075,30 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  it('Given CRLF lines When transposed Then the binding and undo preserve the document', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\ntwo\nthree',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(1, 0);
+    editor.selection = new vscode.Selection(position, position);
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    assert.ok(
+      extension.packageJSON.contributes.keybindings.some(
+        (binding) =>
+          binding.key === 'ctrl+x ctrl+t' &&
+          binding.command === 'emacscode.transposeLines' &&
+          binding.when.includes('!terminalFocus'),
+      ),
+    );
+    await vscode.commands.executeCommand('emacscode.transposeLines');
+    assert.equal(document.getText(), 'two\r\none\r\nthree');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [2, 0]);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one\r\ntwo\r\nthree');
+  });
   it('Given adjacent words When transposed Then undo restores the original text', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one, two three',

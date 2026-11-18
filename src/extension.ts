@@ -302,6 +302,8 @@ export function activate(context: vscode.ExtensionContext): void {
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
     transposeWords: (state, count) => state.transposeWords(count),
+    transposeLines: (state, count, _hasPrefix, lineEnding) =>
+      state.transposeLines(count, lineEnding),
     openLine: (state, count, _hasPrefix, lineEnding) => state.openLine(count, lineEnding),
     cancel: (state) => {
       prefix.reset();

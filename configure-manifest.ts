@@ -61,6 +61,7 @@ const bindings = [
   ['backspace', 'backwardDeleteChar'],
   ['ctrl+t', 'transposeCharacters'],
   ['alt+t', 'transposeWords'],
+  ['ctrl+x ctrl+t', 'transposeLines'],
   ['ctrl+o', 'openLine'],
   ['ctrl+x ctrl+o', 'deleteBlankLines'],
   ['ctrl+g', 'cancel'],

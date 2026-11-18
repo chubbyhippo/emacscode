@@ -1062,6 +1062,76 @@ export class EditorState {
     if (start !== end) this.replace(start, end, '');
     this.done('delete');
   }
+  public transposeLines(count: number, lineEnding = '\n'): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
+    if (lineEnding !== '\n' && lineEnding !== '\r\n') throw new Error('Invalid line ending');
+    if (count === 0) throw new Error('Transpose lines with zero prefix is not supported');
+    if (Math.abs(count) > this.text.length + 10000) throw new Error('Transpose count is too large');
+    const originalText = this.text;
+    const originalPoint = this.point;
+    const originalMark = this.mark;
+    let text = originalText;
+    let position = originalPoint;
+    const move = (distance: number): void => {
+      if (distance < 0) {
+        for (let index = 0; index < -distance; index++) {
+          const start = position === 0 ? 0 : text.lastIndexOf('\n', position - 1) + 1;
+          position = start === 0 ? 0 : text.lastIndexOf('\n', start - 2) + 1;
+        }
+      } else {
+        let remaining = distance;
+        while (remaining > 0) {
+          const newline = text.indexOf('\n', position);
+          if (newline < 0) break;
+          position = newline + 1;
+          remaining--;
+        }
+        if (position === text.length && !text.endsWith('\n')) remaining++;
+        if (remaining > 0) {
+          text += lineEnding.repeat(remaining);
+          position = text.length;
+        }
+      }
+    };
+    const pair = (distance: number): [number, number] => {
+      move(distance);
+      const first = position;
+      move(-distance);
+      return [first, position];
+    };
+    const first = pair(-1);
+    if (count < 0) position = first[0];
+    const second = pair(count);
+    const firstStart = Math.min(...first);
+    const firstEnd = Math.max(...first);
+    const secondStart = Math.min(...second);
+    const secondEnd = Math.max(...second);
+    const leftStart = Math.min(firstStart, secondStart);
+    const leftEnd = firstStart <= secondStart ? firstEnd : secondEnd;
+    const rightStart = firstStart <= secondStart ? secondStart : firstStart;
+    const rightEnd = firstStart <= secondStart ? secondEnd : firstEnd;
+    if (leftEnd > rightStart || leftStart === leftEnd || rightStart === rightEnd)
+      throw new Error('Cannot transpose lines');
+    const left = text.slice(leftStart, leftEnd);
+    const right = text.slice(rightStart, rightEnd);
+    const middle = text.slice(leftEnd, rightStart);
+    const transform = (offset: number): number => {
+      if (offset >= leftEnd) offset += right.length;
+      if (offset > leftEnd) offset -= left.length;
+      else if (offset >= leftStart) offset = leftStart;
+      const boundary = rightStart + right.length - left.length;
+      if (offset > boundary) offset += left.length;
+      const deletionStart = boundary + left.length;
+      if (offset > deletionStart + right.length) offset -= right.length;
+      else if (offset >= deletionStart) offset = deletionStart;
+      return offset;
+    };
+    this.text = text.slice(0, leftStart) + right + middle + left + text.slice(rightEnd);
+    if (originalMark !== undefined) this.mark = transform(originalMark);
+    this.point = count > 0 ? second[0] : second[0] + firstEnd - firstStart;
+    this.active = false;
+    this.done('transpose');
+  }
   public transposeWords(count: number): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
     const originalPoint = this.point;

@@ -273,6 +273,13 @@ When('I transpose words with count {int}', function (count) {
     this.error = error;
   }
 });
+When('I transpose lines with count {int}', function (count) {
+  try {
+    this.state.transposeLines(count, this.state.text.includes('\r\n') ? '\r\n' : '\n');
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I transpose characters with count {int}', function (count) {
   try {
     this.state.transposeCharacters(count);
