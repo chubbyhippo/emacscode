@@ -137,6 +137,73 @@ Feature: Emacs editing state
     Then point is 10 and mark is 2
     And the region is inactive
 
+  @SC-structure-motion
+  Scenario: Move over nested expressions and keep the active mark
+    Given text "one (two [three]) end" at position 0
+    When I set the mark
+    And I move 2 sexp expressions
+    Then point is 17 and mark is 0
+    And the region is active
+    When I move -1 sexp expressions
+    Then point is 4 and mark is 0
+    And the text is "one (two [three]) end"
+
+  @SC-structure-unbalanced
+  Scenario: Unbalanced expressions report an error without changing the region
+    Given text "(unfinished" at position 0
+    When I set the mark
+    And I move 1 sexp expressions
+    Then an error is reported
+    And point is 0 and mark is 0
+    And the region is active
+
+  @SC-structure-partial-error
+  Scenario: Failed repeated list descent retains the completed movement and mark
+    Given text "(a)" at position 0
+    When I set the mark
+    And I move into 2 nested lists
+    Then an error is reported
+    And point is 1 and mark is 0
+    And the region is active
+    And the text is "(a)"
+
+  @SC-structure-trailing-space
+  Scenario: Moving beyond the last expression reaches the buffer boundary
+    Given text "abc   " at position 0
+    When I move 2 sexp expressions
+    Then point is 6
+    And the text is "abc   "
+
+  @SC-goto-character
+  Scenario: Go to an Emacs character position across Unicode and CRLF
+    Given text "a😀\r\nb" at position 0
+    When I set the mark
+    And I go to character 4
+    Then point is 5 and mark is 0
+    And the region is active
+    When I go to character 99
+    Then point is 6 and mark is 0
+
+  @SC-move-column
+  Scenario: Move to a tab-expanded column without inserting text
+    Given text "a\tb\r\nnext" at position 0
+    When I set the mark
+    And I move to column 2 with tab size 4
+    Then point is 2 and mark is 0
+    And the region is active
+    When I move to column 99 with tab size 4
+    Then point is 3 and mark is 0
+    And the text is "a\tb\r\nnext"
+
+  @SC-move-column-unsupported
+  Scenario: Unsupported display widths preserve point and mark
+    Given text "猫a" at position 0
+    When I set the mark
+    And I move to column 1 with tab size 4
+    Then an error is reported
+    And point is 0 and mark is 0
+    And the region is active
+
   @SC-goto-line
   Scenario Outline: Go to numbered lines while retaining an active mark
     Given text "one\r\ntwo\r\nthree" at position 1

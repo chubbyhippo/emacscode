@@ -15,6 +15,8 @@ const tests = [
   'line-boundary-oracle.js',
   'buffer-boundary-oracle.js',
   'goto-line-oracle.js',
+  'position-page-oracle.js',
+  'structure-oracle.js',
   'paragraph-oracle.js',
   'sentence-oracle.js',
   'kill-sentence-oracle.js',

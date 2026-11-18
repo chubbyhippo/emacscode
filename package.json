@@ -104,6 +104,62 @@
         "title": "emacscode: forwardParagraph"
       },
       {
+        "command": "emacscode.backwardPage",
+        "title": "emacscode: backwardPage"
+      },
+      {
+        "command": "emacscode.forwardPage",
+        "title": "emacscode: forwardPage"
+      },
+      {
+        "command": "emacscode.backwardSexp",
+        "title": "emacscode: backwardSexp"
+      },
+      {
+        "command": "emacscode.forwardSexp",
+        "title": "emacscode: forwardSexp"
+      },
+      {
+        "command": "emacscode.backwardList",
+        "title": "emacscode: backwardList"
+      },
+      {
+        "command": "emacscode.forwardList",
+        "title": "emacscode: forwardList"
+      },
+      {
+        "command": "emacscode.backwardUpList",
+        "title": "emacscode: backwardUpList"
+      },
+      {
+        "command": "emacscode.downList",
+        "title": "emacscode: downList"
+      },
+      {
+        "command": "emacscode.scrollForward",
+        "title": "emacscode: scrollForward"
+      },
+      {
+        "command": "emacscode.scrollBackward",
+        "title": "emacscode: scrollBackward"
+      },
+      {
+        "command": "emacscode.recenter",
+        "title": "emacscode: recenter"
+      },
+      {
+        "command": "emacscode.moveToWindowLine",
+        "title": "emacscode: moveToWindowLine"
+      },
+      {
+        "command": "emacscode.gotoCharacter",
+        "title": "emacscode: gotoCharacter"
+      },
+      {
+        "command": "emacscode.moveToColumn",
+        "title": "emacscode: moveToColumn"
+      },
+      {
         "command": "emacscode.gotoLine",
         "title": "emacscode: gotoLine"
       },
@@ -391,6 +447,76 @@
       {
         "key": "alt+shift+]",
         "command": "emacscode.forwardParagraph",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x [",
+        "command": "emacscode.backwardPage",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ]",
+        "command": "emacscode.forwardPage",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+b",
+        "command": "emacscode.backwardSexp",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+f",
+        "command": "emacscode.forwardSexp",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+p",
+        "command": "emacscode.backwardList",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+n",
+        "command": "emacscode.forwardList",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+u",
+        "command": "emacscode.backwardUpList",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+d",
+        "command": "emacscode.downList",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+v",
+        "command": "emacscode.scrollForward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+v",
+        "command": "emacscode.scrollBackward",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+l",
+        "command": "emacscode.recenter",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+r",
+        "command": "emacscode.moveToWindowLine",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g c",
+        "command": "emacscode.gotoCharacter",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "alt+g tab",
+        "command": "emacscode.moveToColumn",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

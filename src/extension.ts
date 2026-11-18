@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import {
   CharacterBoundaryError,
   CharacterDeletionRangeError,
+  ColumnMovementError,
   EditorState,
   KillRing,
   MarkParagraphError,
@@ -9,6 +10,7 @@ import {
   PrefixArgument,
   TabStopError,
 } from './core/editor';
+import { StructureMovementError } from './core/structure';
 import { SearchController } from './search';
 import { Registers } from './core/registers';
 import { editRectangle, RectangleAction, yankRectangle } from './core/rectangles';
@@ -34,6 +36,12 @@ export function activate(context: vscode.ExtensionContext): void {
   const registers = new Registers();
   let killedRectangle: string[] = [];
   let queue: Promise<void> = Promise.resolve();
+  let recenterEditor: vscode.TextEditor | undefined;
+  let recenterSelection: vscode.Selection | undefined;
+  let recenterStep = 0;
+  let windowLineEditor: vscode.TextEditor | undefined;
+  let windowLineSelection: vscode.Selection | undefined;
+  let windowLineStep = 0;
   const stateFor = (editor: vscode.TextEditor): EditorState => {
     let state = states.get(editor);
     const point = editor.document.offsetAt(editor.selection.active);
@@ -62,6 +70,7 @@ export function activate(context: vscode.ExtensionContext): void {
     state: EditorState,
     before: string,
     afterEdit: () => void = () => {},
+    reveal = true,
   ): Promise<void> => {
     if (state.text !== before) {
       if (editor.document.eol === vscode.EndOfLine.CRLF && /(?<!\r)\n/.test(state.text))
@@ -103,7 +112,7 @@ export function activate(context: vscode.ExtensionContext): void {
       state.active && state.mark !== undefined ? editor.document.positionAt(state.mark) : point;
     editor.selection = new vscode.Selection(anchor, point);
     await contextUpdate();
-    editor.revealRange(new vscode.Range(point, point));
+    if (reveal) editor.revealRange(new vscode.Range(point, point));
   };
   const runSpecial = (
     editor: vscode.TextEditor,
@@ -123,6 +132,8 @@ export function activate(context: vscode.ExtensionContext): void {
         )
           throw new Error('Document or selection changed while choosing a register');
         const state = stateFor(editor);
+        recenterEditor = undefined;
+        windowLineEditor = undefined;
         const before = state.text;
         try {
           state.breakCommandChain();
@@ -154,6 +165,8 @@ export function activate(context: vscode.ExtensionContext): void {
             if (editor.selections.length !== 1)
               throw new Error('emacscode supports one cursor at a time');
             const state = stateFor(editor);
+            recenterEditor = undefined;
+            windowLineEditor = undefined;
             const before = state.text;
             const oldRing = ring.values();
             let editCommitted = false;
@@ -188,6 +201,8 @@ export function activate(context: vscode.ExtensionContext): void {
             } catch (error) {
               if (
                 (error instanceof CharacterBoundaryError ||
+                  error instanceof ColumnMovementError ||
+                  error instanceof StructureMovementError ||
                   error instanceof CharacterDeletionRangeError ||
                   error instanceof MarkParagraphError ||
                   error instanceof OpenLineError ||
@@ -231,6 +246,16 @@ export function activate(context: vscode.ExtensionContext): void {
     forwardSentence: (state, count) => state.moveSentence(count),
     backwardParagraph: (state, count) => state.moveParagraph(-count),
     forwardParagraph: (state, count) => state.moveParagraph(count),
+    backwardPage: (state, count) => state.movePage(-count),
+    forwardPage: (state, count) => state.movePage(count),
+    backwardSexp: (state, count) => state.moveStructure(-count),
+    forwardSexp: (state, count) => state.moveStructure(count),
+    backwardList: (state, count) => state.moveStructure(-count, true),
+    forwardList: (state, count) => state.moveStructure(count, true),
+    backwardUpList: (state, count) => state.moveListDepth(count, true),
+    downList: (state, count) => state.moveListDepth(count, false),
+    moveToColumn: (state, count, _hasPrefix, _lineEnding, tabSize) =>
+      state.moveToColumn(count, tabSize),
     upcaseWord: (state, count) => state.changeWordCase('upcase', count),
     downcaseWord: (state, count) => state.changeWordCase('downcase', count),
     capitalizeWord: (state, count) => state.changeWordCase('capitalize', count),
@@ -285,6 +310,151 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   };
   for (const [name, action] of Object.entries(actions)) register(name, action);
+  for (const [name, direction] of [
+    ['scrollForward', 1],
+    ['scrollBackward', -1],
+  ] as const) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`emacscode.${name}`, () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        const hasPrefix = prefix.pending;
+        const count = prefix.consume() * direction;
+        void contextUpdate();
+        queue = queue
+          .then(async () => {
+            if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+              throw new Error('The original editor is no longer active');
+            if (editor.selections.length !== 1)
+              throw new Error('emacscode supports one cursor at a time');
+            const state = stateFor(editor);
+            state.breakCommandChain();
+            recenterEditor = undefined;
+            windowLineEditor = undefined;
+            if (count === 0) return;
+            await vscode.commands.executeCommand('editorScroll', {
+              to: count > 0 ? 'down' : 'up',
+              by: hasPrefix ? 'line' : 'page',
+              value: hasPrefix ? Math.abs(count) : 1,
+              revealCursor: true,
+            });
+            state.sync(
+              editor.document.getText(),
+              editor.document.offsetAt(editor.selection.active),
+            );
+            await apply(editor, state, state.text, undefined, false);
+          })
+          .catch((error) => {
+            void vscode.window.showWarningMessage(
+              `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        return queue;
+      }),
+    );
+  }
+  context.subscriptions.push(
+    vscode.commands.registerCommand('emacscode.recenter', () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      const hasPrefix = prefix.pending;
+      const count = prefix.consume();
+      void contextUpdate();
+      queue = queue
+        .then(async () => {
+          if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+            throw new Error('The original editor is no longer active');
+          if (editor.selections.length !== 1)
+            throw new Error('emacscode supports one cursor at a time');
+          const state = stateFor(editor);
+          state.breakCommandChain();
+          const repeated =
+            recenterEditor === editor && recenterSelection?.isEqual(editor.selection);
+          const step = hasPrefix ? -1 : repeated ? (recenterStep + 1) % 3 : 0;
+          const point = editor.selection.active;
+          if (step === 0)
+            editor.revealRange(
+              new vscode.Range(point, point),
+              vscode.TextEditorRevealType.InCenter,
+            );
+          else if (step === 1)
+            editor.revealRange(new vscode.Range(point, point), vscode.TextEditorRevealType.AtTop);
+          else {
+            const range = editor.visibleRanges[0];
+            const height = range ? Math.max(1, range.end.line - range.start.line) : 1;
+            const offset = step === 2 ? height : count < 0 ? height + count + 1 : count;
+            const top = Math.max(0, Math.min(editor.document.lineCount - 1, point.line - offset));
+            const position = new vscode.Position(top, 0);
+            editor.revealRange(
+              new vscode.Range(position, position),
+              vscode.TextEditorRevealType.AtTop,
+            );
+          }
+          recenterEditor = editor;
+          recenterSelection = editor.selection;
+          recenterStep = step;
+          windowLineEditor = undefined;
+        })
+        .catch((error) => {
+          void vscode.window.showWarningMessage(
+            `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      return queue;
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('emacscode.moveToWindowLine', () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      const hasPrefix = prefix.pending;
+      const count = prefix.consume();
+      void contextUpdate();
+      queue = queue
+        .then(async () => {
+          if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+            throw new Error('The original editor is no longer active');
+          if (editor.selections.length !== 1)
+            throw new Error('emacscode supports one cursor at a time');
+          const range = editor.visibleRanges[0];
+          if (!range) throw new Error('Editor viewport is unavailable');
+          const first = range.start.line;
+          const last = range.end.line;
+          const repeated =
+            windowLineEditor === editor && windowLineSelection?.isEqual(editor.selection);
+          const step = hasPrefix ? -1 : repeated ? (windowLineStep + 1) % 3 : 0;
+          const line = Math.max(
+            first,
+            Math.min(
+              last,
+              step === 1
+                ? first
+                : step === 2
+                  ? last
+                  : hasPrefix
+                    ? count >= 0
+                      ? first + count
+                      : last + count + 1
+                    : first + Math.floor((last - first) / 2),
+            ),
+          );
+          const state = stateFor(editor);
+          state.gotoLine(line + 1);
+          state.backToIndentation();
+          await apply(editor, state, state.text, undefined, false);
+          windowLineEditor = editor;
+          windowLineSelection = editor.selection;
+          windowLineStep = step;
+          recenterEditor = undefined;
+        })
+        .catch((error) => {
+          void vscode.window.showWarningMessage(
+            `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      return queue;
+    }),
+  );
   context.subscriptions.push(
     vscode.commands.registerCommand('emacscode.gotoLine', async (supplied?: number) => {
       const editor = vscode.window.activeTextEditor;
@@ -327,6 +497,36 @@ export function activate(context: vscode.ExtensionContext): void {
           );
         });
       return queue;
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('emacscode.gotoCharacter', async (supplied?: number) => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      const version = editor.document.version;
+      const selection = editor.selection;
+      const hasPrefix = prefix.pending;
+      const count = prefix.consume();
+      void contextUpdate();
+      const valid = (value: string): boolean =>
+        /^[+-]?\d+$/.test(value.trim()) && Number.isSafeInteger(Number(value.trim()));
+      const input =
+        supplied !== undefined || hasPrefix
+          ? String(supplied ?? count)
+          : await vscode.window.showInputBox({
+              prompt: 'Go to character',
+              validateInput: (value) =>
+                valid(value) ? undefined : 'Enter a whole character position',
+            });
+      if (input === undefined) return;
+      if (!valid(input)) {
+        void vscode.window.showWarningMessage('emacscode: invalid character position');
+        return;
+      }
+      return runSpecial(editor, (state) => state.gotoCharacter(Number(input)), {
+        version,
+        selection,
+      });
     }),
   );
   context.subscriptions.push(
@@ -598,6 +798,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => {
       prefix.reset();
+      recenterEditor = undefined;
+      windowLineEditor = undefined;
       contextUpdate();
     }),
   );

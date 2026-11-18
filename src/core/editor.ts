@@ -1,3 +1,5 @@
+import { moveListDepth, moveStructure, StructureMovementError } from './structure';
+
 export type Direction = 'forward' | 'backward';
 
 export class CharacterBoundaryError extends Error {
@@ -15,6 +17,12 @@ export class MarkParagraphError extends Error {
 export class TabStopError extends Error {
   constructor() {
     super('Unsupported display column for tab stop');
+  }
+}
+
+export class ColumnMovementError extends Error {
+  constructor(message: string) {
+    super(message);
   }
 }
 
@@ -277,6 +285,80 @@ export class EditorState {
       const newline = this.text.indexOf('\n', this.point);
       this.point = newline < 0 ? this.text.length : newline + 1;
     }
+    this.done('move');
+  }
+  private structuralMove(action: () => number): void {
+    try {
+      this.point = action();
+    } catch (error) {
+      if (error instanceof StructureMovementError && error.position !== undefined)
+        this.point = error.position;
+      throw error;
+    } finally {
+      this.done('move');
+    }
+  }
+  public moveStructure(count: number, lists = false): void {
+    this.structuralMove(() => moveStructure(this.text, this.point, count, lists));
+  }
+  public moveListDepth(count: number, outward: boolean): void {
+    this.structuralMove(() => moveListDepth(this.text, this.point, count, outward));
+  }
+  public gotoCharacter(position: number): void {
+    if (!Number.isSafeInteger(position)) throw new Error('Invalid character position');
+    let offset = 0;
+    let remaining = Math.max(0, position - 1);
+    while (offset < this.text.length && remaining > 0) {
+      offset += this.text.startsWith('\r\n', offset)
+        ? 2
+        : String.fromCodePoint(this.text.codePointAt(offset)!).length;
+      remaining--;
+    }
+    this.point = offset;
+    this.done('move');
+  }
+  public moveToColumn(column: number, tabSize = 8): void {
+    if (
+      !Number.isSafeInteger(column) ||
+      column < 0 ||
+      !Number.isSafeInteger(tabSize) ||
+      tabSize < 1
+    )
+      throw new ColumnMovementError('Invalid column or tab size');
+    let position = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
+    let current = 0;
+    while (
+      position < this.text.length &&
+      this.text[position] !== '\n' &&
+      !this.text.startsWith('\r\n', position) &&
+      current < column
+    ) {
+      const character = String.fromCodePoint(this.text.codePointAt(position)!);
+      if (!/^[\x20-\x7e\t]$/.test(character))
+        throw new ColumnMovementError('Unsupported display column');
+      current += character === '\t' ? tabSize - (current % tabSize) : 1;
+      position += character.length;
+    }
+    this.point = position;
+    this.done('move');
+  }
+  public movePage(count: number): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid page count');
+    const boundaries = [0];
+    for (let index = 0; index < this.text.length; index++) {
+      if (this.text[index] === '\f' && (index === 0 || this.text[index - 1] === '\n'))
+        boundaries.push(index + 1);
+    }
+    let position = this.point;
+    for (let index = 0; index < Math.abs(count); index++) {
+      const next =
+        count > 0
+          ? (boundaries.find((boundary) => boundary > position) ?? this.text.length)
+          : (boundaries.filter((boundary) => boundary < position).pop() ?? 0);
+      if (next === position) break;
+      position = next;
+    }
+    this.point = position;
     this.done('move');
   }
   public gotoLine(line: number): void {

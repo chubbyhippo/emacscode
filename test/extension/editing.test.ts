@@ -454,6 +454,81 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.selection.active.character, 1);
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given movement bindings Then character, page, column and structural commands preserve marks', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a\tb\n\f(one [two])\nend',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    editor.options = { ...editor.options, tabSize: 4 };
+    const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
+    for (const [key, command] of [
+      ['alt+g c', 'gotoCharacter'],
+      ['alt+g tab', 'moveToColumn'],
+      ['ctrl+x ]', 'forwardPage'],
+      ['ctrl+x [', 'backwardPage'],
+      ['ctrl+alt+f', 'forwardSexp'],
+      ['ctrl+alt+b', 'backwardSexp'],
+      ['ctrl+v', 'scrollForward'],
+      ['alt+v', 'scrollBackward'],
+      ['ctrl+l', 'recenter'],
+      ['alt+r', 'moveToWindowLine'],
+    ]) {
+      assert.ok(
+        extension.packageJSON.contributes.keybindings.some(
+          (binding) =>
+            binding.key === key &&
+            binding.command === `emacscode.${command}` &&
+            binding.when.includes('!terminalFocus'),
+        ),
+      );
+    }
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.moveToColumn');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 2],
+    );
+    await vscode.commands.executeCommand('emacscode.forwardPage');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 1]);
+    await vscode.commands.executeCommand('emacscode.forwardSexp');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 12]);
+    await vscode.commands.executeCommand('emacscode.backwardSexp');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 1]);
+    await vscode.commands.executeCommand('emacscode.gotoCharacter', 2);
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 1]);
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [0, 0]);
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
+  it('Given viewport movement When scrolling and recentering Then the mark and prefix remain coherent', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: Array.from({ length: 100 }, (_, index) => `line ${index}`).join('\n'),
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(30, 0);
+    editor.selection = new vscode.Selection(position, position);
+    editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vscode.commands.executeCommand('emacscode.setMark');
+    const before = editor.visibleRanges[0].start.line;
+    await vscode.commands.executeCommand('emacscode.digit3');
+    await vscode.commands.executeCommand('emacscode.scrollForward');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.ok(editor.visibleRanges[0].start.line > before);
+    assert.equal(editor.selection.anchor.line, 30);
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.scrollBackward');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.ok(editor.visibleRanges[0].start.line <= before + 3);
+    assert.equal(editor.selection.anchor.line, 30);
+    await vscode.commands.executeCommand('emacscode.recenter');
+    await vscode.commands.executeCommand('emacscode.moveToWindowLine');
+    assert.equal(editor.selection.anchor.line, 30);
+    assert.equal(document.lineCount, 100);
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a pending prefix Then all Control digits are bound only in editor context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     const bindings = extension.packageJSON.contributes.keybindings;

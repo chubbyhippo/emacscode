@@ -165,6 +165,33 @@ When('I kill {int} sentences', function (count) {
 When('I go to line {int}', function (line) {
   this.state.gotoLine(line);
 });
+When('I go to character {int}', function (position) {
+  this.state.gotoCharacter(position);
+});
+When('I move to column {int} with tab size {int}', function (column, tabSize) {
+  try {
+    this.state.moveToColumn(column, tabSize);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I move {int} pages', function (count) {
+  this.state.movePage(count);
+});
+When('I move {int} {word} expressions', function (count, kind) {
+  try {
+    this.state.moveStructure(count, kind === 'list');
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I move into {int} nested lists', function (count) {
+  try {
+    this.state.moveListDepth(count, false);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I move to the {word} of the buffer with numeric prefix {int}', function (boundary, count) {
   this.state.bufferBoundary(boundary === 'end', count);
 });
