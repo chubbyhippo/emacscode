@@ -30,6 +30,8 @@ export class RegionCaseError extends Error {}
 
 export class FillParagraphError extends Error {}
 
+export class AbbreviationError extends Error {}
+
 export class OpenLineError extends Error {
   constructor() {
     super('Repetition argument has to be non-negative');
@@ -1105,27 +1107,46 @@ export class EditorState {
     this.active = false;
     this.done('delete');
   }
-  public expandAbbreviation(): void {
-    if (this.previous !== 'abbreviation' || !this.abbreviation) {
+  public expandAbbreviation(count = 1, hasPrefix = false): void {
+    if (!Number.isSafeInteger(count)) throw new AbbreviationError('Invalid abbreviation count');
+    if (hasPrefix || this.previous !== 'abbreviation' || !this.abbreviation) {
       const prefix = this.text.slice(0, this.point).match(/[\p{L}\p{N}_]+$/u)?.[0];
-      if (!prefix) throw new Error('No abbreviation at point');
+      if (!prefix) throw new AbbreviationError('No abbreviation at point');
       const start = this.point - prefix.length;
       const candidates: string[] = [];
       const words = [...this.text.matchAll(/[\p{L}\p{N}_]+/gu)];
-      const ordered = [
-        ...words.filter((word) => word.index! < start).reverse(),
-        ...words.filter((word) => word.index! >= this.point),
-      ];
+      const backward = words.filter((word) => word.index! < start).reverse();
+      const forward = words.filter((word) => word.index! >= this.point);
+      const ordered = count < 0 ? forward : hasPrefix ? backward : [...backward, ...forward];
+      const lower = prefix.toLowerCase();
+      const caseExpansion = (value: string): string => {
+        if (prefix === prefix.toUpperCase() && prefix !== lower) return value.toUpperCase();
+        if (prefix === lower) return value.toLowerCase();
+        if (
+          prefix[0] === prefix[0].toUpperCase() &&
+          prefix.slice(1) === prefix.slice(1).toLowerCase()
+        )
+          return value[0].toUpperCase() + value.slice(1).toLowerCase();
+        return prefix + value.slice(prefix.length);
+      };
       for (const word of ordered) {
-        if (word[0] !== prefix && word[0].startsWith(prefix) && !candidates.includes(word[0]))
-          candidates.push(word[0]);
+        if (word[0].toLowerCase().startsWith(lower) && word[0].length > prefix.length) {
+          const candidate = caseExpansion(word[0]);
+          if (!candidates.includes(candidate)) candidates.push(candidate);
+        }
       }
-      if (!candidates.length) throw new Error('No abbreviation expansion found');
-      this.abbreviation = { prefix, start, candidates, index: 0 };
+      const index = hasPrefix ? Math.max(0, Math.abs(count) - 1) : 0;
+      if (index >= candidates.length)
+        throw new AbbreviationError('No abbreviation expansion found');
+      this.abbreviation = { prefix, start, candidates, index };
     }
     const cycle = this.abbreviation;
-    if (cycle.index >= cycle.candidates.length)
-      throw new Error('No further abbreviation expansion');
+    if (cycle.index >= cycle.candidates.length) {
+      this.replace(cycle.start, this.point, cycle.prefix);
+      this.active = false;
+      this.done('other');
+      throw new AbbreviationError('No further abbreviation expansion');
+    }
     const replacement = cycle.candidates[cycle.index++];
     this.replace(cycle.start, this.point, replacement);
     this.active = false;

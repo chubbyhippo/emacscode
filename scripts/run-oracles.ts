@@ -20,6 +20,7 @@ const tests = [
   'sexp-edit-oracle.js',
   'paragraph-oracle.js',
   'fill-paragraph-oracle.js',
+  'dabbrev-oracle.js',
   'sentence-oracle.js',
   'kill-sentence-oracle.js',
   'mark-paragraph-oracle.js',

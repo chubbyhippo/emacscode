@@ -227,6 +227,24 @@ Feature: Emacs editing state
     When I expand an abbreviation
     Then the text is "alpha alpine alpha"
 
+  @SC-dabbrev-exhaustion
+  Scenario: Exhausting abbreviation candidates restores the original prefix
+    Given text "alpha al" at position 8
+    When I expand an abbreviation
+    Then the text is "alpha alpha"
+    When I expand an abbreviation
+    Then an error is reported
+    And the text is "alpha al"
+    And point is 8
+
+  @SC-dabbrev-case
+  Scenario: Expansion follows the uppercase abbreviation's case
+    Given text "alphabet alpha AL" at position 17
+    When I expand an abbreviation
+    Then the text is "alphabet alpha ALPHA"
+    When I expand an abbreviation
+    Then the text is "alphabet alpha ALPHABET"
+
   @SC-quoted-insert
   Scenario: Insert a quoted character repeatedly
     Given text "ab" at position 1

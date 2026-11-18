@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import {
+  AbbreviationError,
   CharacterBoundaryError,
   CharacterDeletionRangeError,
   ColumnMovementError,
@@ -201,6 +202,15 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
               }
             } catch (error) {
+              if (error instanceof AbbreviationError) {
+                try {
+                  await apply(editor, state, before);
+                } catch (applyError) {
+                  states.delete(editor);
+                  throw applyError;
+                }
+                throw error;
+              }
               if (
                 (error instanceof CharacterBoundaryError ||
                   error instanceof ColumnMovementError ||
@@ -313,7 +323,7 @@ export function activate(context: vscode.ExtensionContext): void {
     deleteBlankLines: (state) => state.deleteBlankLines(),
     fillParagraph: (state, _count, hasPrefix, lineEnding) =>
       state.fillParagraph(70, lineEnding, hasPrefix),
-    expandAbbreviation: (state) => state.expandAbbreviation(),
+    expandAbbreviation: (state, count, hasPrefix) => state.expandAbbreviation(count, hasPrefix),
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),
     transposeWords: (state, count) => state.transposeWords(count),

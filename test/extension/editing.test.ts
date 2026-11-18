@@ -538,6 +538,22 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'alpha alpha');
   });
+  it('Given exhausted abbreviation candidates Then the original prefix returns and undo restores the expansion', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'alpha al',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 8);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'alpha alpha');
+    await vscode.commands.executeCommand('emacscode.expandAbbreviation');
+    assert.equal(document.getText(), 'alpha al');
+    assert.equal(editor.selection.active.character, 8);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'alpha alpha');
+  });
   it('Given fill input and an active region Then unsupported justification preserves the selection', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one  two three',
