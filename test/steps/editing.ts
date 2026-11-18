@@ -7,7 +7,7 @@ class EditingWorld {
   error: unknown;
 }
 setWorldConstructor(EditingWorld);
-const unescape = (value) => value.replace(/\\r/g, '\r').replace(/\\n/g, '\n');
+const unescape = (value) => value.replace(/\\r/g, '\r').replace(/\\n/g, '\n').replace(/\\t/g, '\t');
 Given('text {string} at position {int}', function (text, point) {
   this.state = new EditorState(unescape(text), point, this.ring);
 });

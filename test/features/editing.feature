@@ -442,6 +442,27 @@ Feature: Emacs editing state
     When I move forward 1 word
     Then point is 5
 
+  @SC-vertical-tabs-goal
+  Scenario: Vertical movement retains a tab-expanded goal across short CRLF lines
+    Given text "a\tb\r\nshort\r\n0123456789" at position 2
+    When I set the mark
+    And I move down 1 line
+    Then point is 10 and mark is 2
+    And the region is active
+    When I move down 1 line
+    Then point is 20 and mark is 2
+    When I move up 1 line
+    Then point is 10 and mark is 2
+    And the text is "a\tb\r\nshort\r\n0123456789"
+
+  @SC-vertical-tabs-crossing
+  Scenario: A target inside a tab stops after the tab
+    Given text "abc\n\txyz" at position 2
+    When I move down 1 line
+    Then point is 5
+    When I move up 1 line
+    Then point is 2
+
   Scenario: Killing at end of line removes the newline
     Given text "alpha\nbeta" at position 5
     When I kill the line

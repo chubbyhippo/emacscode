@@ -448,6 +448,28 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.lineCount, 16);
     });
   }
+  it('Given tabbed lines and an active mark When moving vertically Then the editor tab size determines the goal column', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a\tb\nxy\n0123456789\n\tend',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    editor.options = { ...editor.options, tabSize: 4 };
+    const position = new vscode.Position(0, 2);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 2]);
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [2, 4]);
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [3, 1]);
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [0, 2]);
+    await vscode.commands.executeCommand('emacscode.previousLine');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [2, 4]);
+    await vscode.commands.executeCommand('emacscode.cancel');
+    assert.equal(document.getText(), 'a\tb\nxy\n0123456789\n\tend');
+  });
   for (const [key, command, expected] of [
     ['alt+u', 'upcaseWord', 'ALPHA beta'],
     ['alt+l', 'downcaseWord', 'alpha beta'],

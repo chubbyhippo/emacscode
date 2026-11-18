@@ -5,6 +5,7 @@ import { setup } from './setup-emacs';
 const tests = [
   'oracle.js',
   'movement-oracle.js',
+  'vertical-tabs-oracle.js',
   'character-boundary-oracle.js',
   'delete-character-oracle.js',
   'backward-delete-oracle.js',

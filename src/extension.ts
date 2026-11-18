@@ -11,7 +11,13 @@ import { SearchController } from './search';
 import { Registers } from './core/registers';
 import { editRectangle, RectangleAction, yankRectangle } from './core/rectangles';
 
-type Action = (state: EditorState, count: number, hasPrefix: boolean, lineEnding: string) => void;
+type Action = (
+  state: EditorState,
+  count: number,
+  hasPrefix: boolean,
+  lineEnding: string,
+  tabSize: number,
+) => void;
 
 export function activate(context: vscode.ExtensionContext): void {
   const ring = new KillRing(
@@ -152,6 +158,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 count,
                 hasPrefix,
                 editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+                typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
               );
               if (state.text !== before && editor.document.isClosed)
                 throw new Error('The document is closed');
@@ -203,8 +210,9 @@ export function activate(context: vscode.ExtensionContext): void {
   const actions: Record<string, Action> = {
     backwardChar: (state, count) => state.moveCharacter(-count),
     forwardChar: (state, count) => state.moveCharacter(count),
-    previousLine: (state, count) => state.vertical(-count),
-    nextLine: (state, count) => state.vertical(count),
+    previousLine: (state, count, _hasPrefix, _lineEnding, tabSize) =>
+      state.vertical(-count, tabSize),
+    nextLine: (state, count, _hasPrefix, _lineEnding, tabSize) => state.vertical(count, tabSize),
     beginningOfLine: (state, count) => state.lineBoundary(false, count),
     endOfLine: (state, count) => state.lineBoundary(true, count),
     backToIndentation: (state) => state.backToIndentation(),

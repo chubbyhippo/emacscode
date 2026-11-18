@@ -96,6 +96,7 @@ export class EditorState {
   private previous = '';
   private yankRange: [number, number] | undefined;
   private goalColumn: number | undefined;
+  private goalTabSize: number | undefined;
   private spacingCycle:
     { whitespace: string; originalPoint: number; count?: number; step: number } | undefined;
   constructor(
@@ -117,6 +118,8 @@ export class EditorState {
       this.yankRange = undefined;
       this.spacingCycle = undefined;
       this.previous = '';
+      this.goalColumn = undefined;
+      this.goalTabSize = undefined;
     }
     if (this.point !== point) {
       this.previous = '';
@@ -251,9 +254,15 @@ export class EditorState {
     this.point = position;
     this.done('move');
   }
-  public vertical(count: number): void {
+  public vertical(count: number, tabSize = 8): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid line count');
+    if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
     const start = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
-    const goal = this.goalColumn ?? this.point - start;
+    let column = 0;
+    for (let position = start; position < this.point; position++)
+      column += this.text[position] === '\t' ? tabSize - (column % tabSize) : 1;
+    const goal = this.goalTabSize === tabSize ? (this.goalColumn ?? column) : column;
+    this.goalTabSize = tabSize;
     let lineStart = start;
     for (let index = 0; index < Math.abs(count); index++) {
       if (count > 0) {
@@ -278,7 +287,12 @@ export class EditorState {
     const end = this.text.indexOf('\n', lineStart);
     const lineEnd =
       end < 0 ? this.text.length : end > lineStart && this.text[end - 1] === '\r' ? end - 1 : end;
-    this.point = Math.min(lineStart + goal, lineEnd);
+    this.point = lineStart;
+    let targetColumn = 0;
+    while (this.point < lineEnd && targetColumn < goal) {
+      targetColumn += this.text[this.point] === '\t' ? tabSize - (targetColumn % tabSize) : 1;
+      this.point++;
+    }
     if (
       this.point > lineStart &&
       this.point < lineEnd &&
