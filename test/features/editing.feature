@@ -836,6 +836,16 @@ Feature: Emacs editing state
     Then the text is "three\none\ntwo\n"
     And point is 6
 
+  @SC-transpose-lines-zero
+  Scenario: A zero prefix exchanges lines at point and mark
+    Given text "one\r\ntwo\r\nthree" at position 0
+    When I set the mark
+    And I move forward 10 character
+    And I transpose lines with count 0
+    Then the text is "three\r\ntwo\r\none\r\n"
+    And point is 0 and mark is 17
+    And the region is inactive
+
   @SC-transpose-lines-error
   Scenario: An invalid transpose leaves the buffer unchanged
     Given text "one\ntwo\n" at position 0

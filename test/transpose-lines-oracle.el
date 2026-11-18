@@ -3,15 +3,15 @@
   (dolist (input '("" "a" "a\n" "a\nb" "a\nb\n" "ab\nc\ndef\n" "a\n\nb\n"))
     (dotimes (start (1+ (length input)))
       (dolist (count '(-3 -2 -1 0 1 2 3))
-        (dolist (mark-state '(unset active inactive))
+        (dolist (mark-state '(unset active inactive active-start inactive-start))
           (with-temp-buffer
             (fundamental-mode)
             (transient-mark-mode 1)
             (insert input)
             (goto-char (1+ start))
             (unless (eq mark-state 'unset)
-              (set-mark (point-max))
-              (setq mark-active (eq mark-state 'active)))
+              (set-mark (if (memq mark-state '(active-start inactive-start)) (point-min) (point-max)))
+              (setq mark-active (memq mark-state '(active active-start))))
             (switch-to-buffer (current-buffer))
             (let ((failure nil) (last-command nil) (this-command nil))
               (condition-case err

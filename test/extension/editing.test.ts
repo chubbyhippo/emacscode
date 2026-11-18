@@ -1099,6 +1099,26 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'one\r\ntwo\r\nthree');
   });
+  it('Given a zero prefix When transposing marked lines Then point and undo remain coherent', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one\ntwo\nthree',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.nextLine');
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.transposeLines');
+    assert.equal(document.getText(), 'three\r\ntwo\r\none\r\n');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 0]);
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [2, 0]);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one\r\ntwo\r\nthree');
+  });
   it('Given adjacent words When transposed Then undo restores the original text', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one, two three',

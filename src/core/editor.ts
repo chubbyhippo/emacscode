@@ -1065,7 +1065,7 @@ export class EditorState {
   public transposeLines(count: number, lineEnding = '\n'): void {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
     if (lineEnding !== '\n' && lineEnding !== '\r\n') throw new Error('Invalid line ending');
-    if (count === 0) throw new Error('Transpose lines with zero prefix is not supported');
+    if (count === 0 && this.mark === undefined) throw new Error('No mark set');
     if (Math.abs(count) > this.text.length + 10000) throw new Error('Transpose count is too large');
     const originalText = this.text;
     const originalPoint = this.point;
@@ -1076,7 +1076,7 @@ export class EditorState {
       if (distance < 0) {
         for (let index = 0; index < -distance; index++) {
           const start = position === 0 ? 0 : text.lastIndexOf('\n', position - 1) + 1;
-          position = start === 0 ? 0 : text.lastIndexOf('\n', start - 2) + 1;
+          position = start <= 1 ? 0 : text.lastIndexOf('\n', start - 2) + 1;
         }
       } else {
         let remaining = distance;
@@ -1099,9 +1099,10 @@ export class EditorState {
       move(-distance);
       return [first, position];
     };
-    const first = pair(-1);
-    if (count < 0) position = first[0];
-    const second = pair(count);
+    const first = pair(count === 0 ? 1 : -1);
+    if (count === 0) position = originalMark!;
+    else if (count < 0) position = first[0];
+    const second = pair(count === 0 ? 1 : count);
     const firstStart = Math.min(...first);
     const firstEnd = Math.max(...first);
     const secondStart = Math.min(...second);
@@ -1128,7 +1129,10 @@ export class EditorState {
     };
     this.text = text.slice(0, leftStart) + right + middle + left + text.slice(rightEnd);
     if (originalMark !== undefined) this.mark = transform(originalMark);
-    this.point = count > 0 ? second[0] : second[0] + firstEnd - firstStart;
+    if (count === 0) {
+      this.point = transform(originalMark!);
+      this.mark = transform(originalPoint);
+    } else this.point = count > 0 ? second[0] : second[0] + firstEnd - firstStart;
     this.active = false;
     this.done('transpose');
   }

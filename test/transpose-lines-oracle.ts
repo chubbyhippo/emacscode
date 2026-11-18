@@ -15,7 +15,7 @@ const results = JSON.parse(
 );
 let checked = 0;
 for (const expected of results) {
-  if (expected.error || expected.count === 0) continue;
+  if (expected.error) continue;
   for (const crlf of [false, true]) {
     const convert = (text: string) => text.replace(/\n/g, crlf ? '\r\n' : '\n');
     const input = convert(expected.input);
@@ -25,8 +25,8 @@ for (const expected of results) {
       new KillRing(),
     );
     if (expected.initial !== 'unset') {
-      state.mark = input.length;
-      state.active = expected.initial === 'active';
+      state.mark = expected.initial.endsWith('-start') ? 0 : input.length;
+      state.active = expected.initial.startsWith('active');
     }
     const context = JSON.stringify({ ...expected, crlf });
     assert.doesNotThrow(() => state.transposeLines(expected.count, crlf ? '\r\n' : '\n'), context);
