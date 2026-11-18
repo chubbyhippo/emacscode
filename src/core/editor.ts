@@ -28,6 +28,8 @@ export class ColumnMovementError extends Error {
 
 export class RegionCaseError extends Error {}
 
+export class FillParagraphError extends Error {}
+
 export class OpenLineError extends Error {
   constructor() {
     super('Repetition argument has to be non-negative');
@@ -1129,18 +1131,27 @@ export class EditorState {
     this.active = false;
     this.done('abbreviation');
   }
-  public fillParagraph(width = 70, lineEnding = '\n'): void {
-    if (!Number.isSafeInteger(width) || width < 1) throw new Error('Invalid fill column');
-    const lines = this.text.split(/\r?\n/);
+  public fillParagraph(width = 70, lineEnding = '\n', justify = false): void {
+    if (!Number.isSafeInteger(width) || width < 1 || (lineEnding !== '\n' && lineEnding !== '\r\n'))
+      throw new FillParagraphError('Invalid fill settings');
+    if (justify || (this.active && this.mark !== undefined && this.mark !== this.point))
+      throw new FillParagraphError('Justification and active-region filling are not supported');
+    if (
+      (lineEnding === '\r\n' && /(?<!\r)\n/.test(this.text)) ||
+      (lineEnding === '\n' && /\r\n/.test(this.text))
+    )
+      throw new FillParagraphError('Mixed line endings are not supported');
+    const lines = this.text.split(lineEnding);
     const starts: number[] = [];
     let offset = 0;
-    for (const line of lines) {
+    for (const text of lines) {
       starts.push(offset);
-      offset += line.length + lineEnding.length;
+      offset += text.length + lineEnding.length;
     }
     let line = 0;
     while (line + 1 < starts.length && starts[line + 1] <= this.point) line++;
-    if (/^[ \t]*$/.test(lines[line])) {
+    while (line < lines.length && /^[ \t]*$/.test(lines[line])) line++;
+    if (line === lines.length) {
       this.done('fill');
       return;
     }
@@ -1151,26 +1162,63 @@ export class EditorState {
     const start = starts[first];
     const end = starts[last] + lines[last].length;
     const original = this.text.slice(start, end);
-    if (/[^\x20-\x7e\t\r\n]/.test(original)) throw new Error('Unsupported fill characters');
-    const words = original.trim().split(/[ \t\r\n]+/);
-    const output: string[] = [];
-    let current = '';
-    for (const word of words) {
-      if (current && current.length + 1 + word.length > width) {
-        output.push(current);
-        current = word;
-      } else current += (current ? ' ' : '') + word;
+    if (/[^\x20-\x7e\t\r\n]/.test(original))
+      throw new FillParagraphError('Unsupported fill characters');
+    const indent = lines[first].match(/^[ \t]*/)?.[0] ?? '';
+    if (indent.includes('\t')) throw new FillParagraphError('Tab indentation is not supported');
+    const words = [...original.matchAll(/[^\s]+/g)];
+    if (!words.length) {
+      this.done('fill');
+      return;
     }
-    if (current) output.push(current);
-    const value = output.join(lineEnding);
-    let logicalOffset = Math.min(this.point - start, value.length);
-    if (logicalOffset > 0 && value[logicalOffset - 1] === '\r' && value[logicalOffset] === '\n')
-      logicalOffset--;
-    if (original !== value) {
-      this.replace(start, end, value);
-      this.point = start + logicalOffset;
-      this.active = false;
+    const replacements: { start: number; end: number; value: string }[] = [];
+    let column = indent.length + words[0][0].length;
+    for (let index = 1; index < words.length; index++) {
+      const previous = words[index - 1];
+      const word = words[index];
+      const gapStart = previous.index! + previous[0].length;
+      const gapEnd = word.index!;
+      const gap = original.slice(gapStart, gapEnd);
+      const sentence =
+        /[.?!][\]"')}]?$/.test(previous[0]) && (gap.includes('\n') || gap.length > 1);
+      const spacing = sentence ? '  ' : ' ';
+      const replacement =
+        column + spacing.length + word[0].length > width ? lineEnding + indent : spacing;
+      if (gap !== replacement)
+        replacements.push({ start: start + gapStart, end: start + gapEnd, value: replacement });
+      column = replacement.includes('\n')
+        ? indent.length + word[0].length
+        : column + replacement.length + word[0].length;
     }
+    const mapOffset = (position: number): number => {
+      let delta = 0;
+      for (const edit of replacements) {
+        if (position < edit.start) break;
+        if (position === edit.end) return edit.start + delta + edit.value.length;
+        if (position < edit.end) {
+          const logicalValue = edit.value.replace(/\r\n/g, '\n');
+          const logical = Math.min(position - edit.start, logicalValue.length);
+          return (
+            edit.start +
+            delta +
+            (lineEnding === '\r\n'
+              ? logicalValue.slice(0, logical).replace(/\n/g, '\r\n').length
+              : logical)
+          );
+        }
+        delta += edit.value.length - (edit.end - edit.start);
+      }
+      return position + delta;
+    };
+    const point = mapOffset(this.point);
+    const mark = this.mark === undefined ? undefined : mapOffset(this.mark);
+    for (let index = replacements.length - 1; index >= 0; index--) {
+      const edit = replacements[index];
+      this.text = this.text.slice(0, edit.start) + edit.value + this.text.slice(edit.end);
+    }
+    this.point = point;
+    this.mark = mark;
+    if (replacements.length) this.active = false;
     this.done('fill');
   }
   public tabToTabStop(tabSize = 8, insertSpaces = false): void {

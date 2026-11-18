@@ -19,6 +19,7 @@ const tests = [
   'structure-oracle.js',
   'sexp-edit-oracle.js',
   'paragraph-oracle.js',
+  'fill-paragraph-oracle.js',
   'sentence-oracle.js',
   'kill-sentence-oracle.js',
   'mark-paragraph-oracle.js',

@@ -538,6 +538,29 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'alpha alpha');
   });
+  it('Given fill input and an active region Then unsupported justification preserves the selection', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one  two three',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit3');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.fillParagraph');
+    assert.equal(document.getText(), 'one  two three');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 3],
+    );
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 4],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given newline and indentation adapters Then editing and undo remain functional', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha beta',

@@ -4,6 +4,7 @@ import {
   CharacterDeletionRangeError,
   ColumnMovementError,
   EditorState,
+  FillParagraphError,
   KillRing,
   MarkParagraphError,
   OpenLineError,
@@ -203,6 +204,7 @@ export function activate(context: vscode.ExtensionContext): void {
               if (
                 (error instanceof CharacterBoundaryError ||
                   error instanceof ColumnMovementError ||
+                  error instanceof FillParagraphError ||
                   error instanceof StructureMovementError ||
                   error instanceof CharacterDeletionRangeError ||
                   error instanceof MarkParagraphError ||
@@ -309,7 +311,8 @@ export function activate(context: vscode.ExtensionContext): void {
       state.tabToTabStop(tabSize, insertSpaces),
     cycleSpacing: (state, count, hasPrefix) => state.cycleSpacing(hasPrefix ? count : undefined),
     deleteBlankLines: (state) => state.deleteBlankLines(),
-    fillParagraph: (state, _count, _hasPrefix, lineEnding) => state.fillParagraph(70, lineEnding),
+    fillParagraph: (state, _count, hasPrefix, lineEnding) =>
+      state.fillParagraph(70, lineEnding, hasPrefix),
     expandAbbreviation: (state) => state.expandAbbreviation(),
     deleteIndentation: (state, _count, hasPrefix) => state.deleteIndentation(hasPrefix),
     transposeCharacters: (state, count) => state.transposeCharacters(count),

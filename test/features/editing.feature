@@ -199,6 +199,26 @@ Feature: Emacs editing state
     When I fill a paragraph to width 9
     Then the text is "one two\r\nthree\r\nfour\r\n\r\nnext"
 
+  @SC-fill-point
+  Scenario: Filling preserves point and mark relative to the text
+    Given text "one  two three" at position 5
+    When I set the mark
+    And I fill a paragraph to width 8
+    Then the text is "one two\nthree"
+    And point is 4 and mark is 4
+    And the region is inactive
+
+  @SC-fill-active-reject
+  Scenario: Filling a nonempty active region is rejected without editing
+    Given text "one  two three" at position 0
+    When I set the mark
+    And I move forward 3 character
+    And I fill a paragraph to width 8
+    Then an error is reported
+    And the text is "one  two three"
+    And point is 3 and mark is 0
+    And the region is active
+
   @SC-dabbrev
   Scenario: Cycle abbreviation expansions in the current buffer
     Given text "alpha alpine al" at position 15
