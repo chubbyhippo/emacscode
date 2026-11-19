@@ -1274,6 +1274,66 @@ describe('emacscode editor behavior', function () {
       }
     });
   }
+  it('Given two kills When yanking with numeric and universal prefixes Then ring selection and point are preserved', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(editor.document.getText(), ' ');
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editor.document.getText(), ' alpha');
+      await vscode.commands.executeCommand('emacscode.negativeArgument');
+      await vscode.commands.executeCommand('emacscode.yankPop');
+      assert.equal(editor.document.getText(), ' beta');
+      await vscode.commands.executeCommand('emacscode.universalArgument');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editor.document.getText(), ' betabeta');
+      assert.equal(editor.selection.active.character, 5);
+      await vscode.commands.executeCommand('emacscode.yankPop');
+      assert.equal(editor.document.getText(), ' betaalpha');
+      assert.equal(editor.selection.active.character, 5);
+      await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+      assert.equal(editor.selection.active.character, 10);
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
+  it('Given a rejected prefixed yank Then its ring selection is rolled back', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-yank-readonly',
+      {
+        provideTextDocumentContent: () => 'protected',
+      },
+    );
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      await vscode.commands.executeCommand('emacscode.killWord');
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editor.document.getText(), ' alpha');
+      const readonly = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-yank-readonly:/text'),
+      );
+      editor = await vscode.window.showTextDocument(readonly);
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(readonly.getText(), 'protected');
+      const destination = await vscode.workspace.openTextDocument({
+        content: '',
+        language: 'plaintext',
+      });
+      editor = await vscode.window.showTextDocument(destination);
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(destination.getText(), 'alpha');
+    } finally {
+      provider.dispose();
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given a read-only document When a kill is rejected Then the ring and clipboard recover', async function () {
     const clipboard = await vscode.env.clipboard.readText();
     const scheme = 'emacscode-readonly-test';

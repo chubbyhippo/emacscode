@@ -52,6 +52,12 @@ When('I kill the next word twice', function () {
 When('I yank', function () {
   this.state.yank();
 });
+When('I yank with numeric prefix {int}', function (count) {
+  this.state.yank(undefined, count);
+});
+When('I yank with a universal prefix', function () {
+  this.state.yank(undefined, 4, true);
+});
 When('I try yank pop', function () {
   try {
     this.state.yankPop();

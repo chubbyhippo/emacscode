@@ -4,6 +4,7 @@ import { setup } from './setup-emacs';
 
 const tests = [
   'oracle.js',
+  'yank-prefix-oracle.js',
   'movement-oracle.js',
   'vertical-tabs-oracle.js',
   'goal-column-oracle.js',

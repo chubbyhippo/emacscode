@@ -71,9 +71,12 @@ export class KillRing {
   public values(): readonly string[] {
     return this.entries.slice();
   }
-  public restore(entries: readonly string[]): void {
+  public snapshot(): { entries: readonly string[]; index: number } {
+    return { entries: this.values(), index: this.index };
+  }
+  public restore(entries: readonly string[], index = 0): void {
     this.entries = [...entries];
-    this.index = 0;
+    this.index = this.entries.length ? Math.max(0, Math.min(index, this.entries.length - 1)) : 0;
   }
 }
 
@@ -912,8 +915,9 @@ export class EditorState {
     }
     return this.kill(this.point, position, count < 0 ? 'backward' : 'forward');
   }
-  public yank(lineEnding?: string): void {
-    const value = this.ring.current();
+  public yank(lineEnding?: string, count = 1, rawUniversal = false): void {
+    if (!Number.isSafeInteger(count)) throw new Error('Invalid yank count');
+    const value = this.ring.rotate(rawUniversal ? 0 : count - 1);
     if (value === undefined) throw new Error('Kill ring is empty');
     const start = this.point;
     this.replace(
@@ -921,8 +925,11 @@ export class EditorState {
       start,
       lineEnding === undefined ? value : value.replace(/\r\n|\n/g, lineEnding),
     );
-    this.mark = start;
-    this.yankRange = [start, this.point];
+    const end = this.point;
+    this.mark = rawUniversal ? end : start;
+    if (rawUniversal) this.point = start;
+    this.active = false;
+    this.yankRange = [start, end];
     this.done('yank');
   }
   public yankPop(count = 1, lineEnding?: string): void {
@@ -931,13 +938,17 @@ export class EditorState {
     const value = this.ring.rotate(count);
     if (value === undefined) throw new Error('Kill ring is empty');
     const [start, end] = this.yankRange;
+    const atStart = this.point < (this.mark ?? this.point);
     this.replace(
       start,
       end,
       lineEnding === undefined ? value : value.replace(/\r\n|\n/g, lineEnding),
     );
-    this.mark = start;
-    this.yankRange = [start, this.point];
+    const newEnd = this.point;
+    this.mark = atStart ? newEnd : start;
+    if (atStart) this.point = start;
+    this.active = false;
+    this.yankRange = [start, newEnd];
     this.done('yank-pop');
   }
   public deleteCharacter(count: number, hasPrefix = false): void {

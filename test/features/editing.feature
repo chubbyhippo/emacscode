@@ -881,6 +881,29 @@ Feature: Emacs editing state
     And I rotate the yank
     Then the text is " alpha"
 
+  Scenario: A numeric yank selects an older kill and yank-pop advances
+    Given text "" at position 0
+    When I add an older kill "old"
+    And I add an older kill "new"
+    And I yank with numeric prefix 2
+    Then the text is "old"
+    And point is 3 and mark is 0
+    When I rotate the yank
+    Then the text is "new"
+    And point is 3 and mark is 0
+
+  Scenario: Universal yank and yank-pop keep point before the inserted text
+    Given text "x" at position 0
+    When I add an older kill "old"
+    And I add an older kill "new"
+    And I yank with a universal prefix
+    Then the text is "newx"
+    And point is 0 and mark is 3
+    And the region is inactive
+    When I rotate the yank
+    Then the text is "oldx"
+    And point is 0 and mark is 3
+
   Scenario: Zap forward through the second matching character and yank
     Given text "abcAdefa!" at position 1
     When I zap 2 occurrences of "a"

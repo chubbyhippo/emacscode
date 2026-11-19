@@ -178,7 +178,8 @@ export function activate(context: vscode.ExtensionContext): void {
             recenterEditor = undefined;
             windowLineEditor = undefined;
             const before = state.text;
-            const oldRing = ring.values();
+            const ringSnapshot = ring.snapshot();
+            const oldRing = ringSnapshot.entries;
             let editCommitted = false;
             try {
               action(
@@ -238,7 +239,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
                 throw error;
               }
-              if (!editCommitted) ring.restore(oldRing);
+              if (!editCommitted) ring.restore(ringSnapshot.entries, ringSnapshot.index);
               states.delete(editor);
               throw error;
             }
@@ -320,7 +321,8 @@ export function activate(context: vscode.ExtensionContext): void {
     backwardKillSentence: (state, count) => {
       state.killSentence(-count);
     },
-    yank: (state, _count, _hasPrefix, lineEnding) => state.yank(lineEnding),
+    yank: (state, count, _hasPrefix, lineEnding, _tabSize, rawUniversal) =>
+      state.yank(lineEnding, count, rawUniversal),
     yankPop: (state, count, _hasPrefix, lineEnding) => state.yankPop(count, lineEnding),
     deleteChar: (state, count, hasPrefix) => state.deleteCharacter(count, hasPrefix),
     backwardDeleteChar: (state, count, hasPrefix) =>
@@ -766,7 +768,8 @@ export function activate(context: vscode.ExtensionContext): void {
             throw new Error('Document or selection changed while choosing a character');
           const state = stateFor(editor);
           const before = state.text;
-          const oldRing = ring.values();
+          const ringSnapshot = ring.snapshot();
+          const oldRing = ringSnapshot.entries;
           let editCommitted = false;
           try {
             state.zapToChar(character, count);
@@ -787,7 +790,7 @@ export function activate(context: vscode.ExtensionContext): void {
               }
             }
           } catch (error) {
-            if (!editCommitted) ring.restore(oldRing);
+            if (!editCommitted) ring.restore(ringSnapshot.entries, ringSnapshot.index);
             states.delete(editor);
             throw error;
           }
