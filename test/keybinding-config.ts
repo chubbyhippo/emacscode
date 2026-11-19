@@ -9,6 +9,8 @@ const editorContext =
 for (const [key, command] of [
   ['ctrl+b', 'emacscode.backwardChar'],
   ['ctrl+f', 'emacscode.forwardChar'],
+  ['ctrl+x r s', 'emacscode.copyToRegister'],
+  ['ctrl+x r x', 'emacscode.copyToRegister'],
   ['ctrl+x r shift+=', 'emacscode.incrementRegister'],
 ]) {
   const matches = bindings.filter((binding) => binding.key === key && binding.command === command);

@@ -1662,6 +1662,50 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.insertRegister', 'a');
     assert.equal(editor.document.getText(), 'alpha betaalpha');
   });
+  it('Given a register copy When a zero prefix is supplied Then the region is cut and undo restores it', async function () {
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardWord');
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.copyToRegister', 'q');
+    assert.equal(editor.document.getText(), ' beta');
+    assert.equal(editor.selection.active.character, 0);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(editor.document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.endOfBuffer');
+    await vscode.commands.executeCommand('emacscode.insertRegister', 'q');
+    assert.equal(editor.document.getText(), 'alpha betaalpha');
+  });
+  it('Given a rejected read-only register copy Then the previous value remains', async function () {
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardWord');
+    await vscode.commands.executeCommand('emacscode.copyToRegister', 'z');
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-copy-readonly',
+      {
+        provideTextDocumentContent: () => 'protected',
+      },
+    );
+    try {
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-copy-readonly:/text'),
+      );
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.setMark');
+      await vscode.commands.executeCommand('emacscode.forwardWord');
+      await vscode.commands.executeCommand('emacscode.universalArgument');
+      await vscode.commands.executeCommand('emacscode.copyToRegister', 'z');
+      assert.equal(document.getText(), 'protected');
+      const destination = await vscode.workspace.openTextDocument({
+        content: '',
+        language: 'plaintext',
+      });
+      editor = await vscode.window.showTextDocument(destination);
+      await vscode.commands.executeCommand('emacscode.insertRegister', 'z');
+      assert.equal(destination.getText(), 'alpha');
+    } finally {
+      provider.dispose();
+    }
+  });
   it('Given a text register When appending and cutting a region Then the edit and register are preserved', async function () {
     await vscode.commands.executeCommand('emacscode.setMark');
     await vscode.commands.executeCommand('emacscode.forwardWord');

@@ -4,6 +4,25 @@ Feature: Text and number registers
     When I store text "hello" in register "a"
     Then register "a" contains text "hello"
 
+  Scenario Outline: Copying a region to a register respects the prefix
+    Given a fresh register collection
+    And an active register region from <mark> to <point> in "abcdef"
+    When I copy the register region to "r" with deletion <delete>
+    Then register "r" contains text "<copied>"
+    And the register buffer is "<text>" with point <resultPoint> and mark <resultMark> inactive
+    Examples:
+      | mark | point | delete | copied | text   | resultPoint | resultMark |
+      | 1    | 4     | false  | bcd    | abcdef | 4           | 1          |
+      | 4    | 1     | true   | bcd    | aef    | 1           | 1          |
+      | 4    | 4     | true   |        | abcdef | 4           | 4          |
+
+  Scenario: A rejected register copy leaves its previous value unchanged
+    Given a fresh register collection
+    And I store text "old" in register "r"
+    And an active register region from 1 to 4 in "abcdef"
+    When I prepare but reject a register copy to "r"
+    Then register "r" contains text "old"
+
   Scenario: A rectangle register retains its rows and rejects numeric operations
     Given a fresh register collection
     When I store rectangle rows "bc" and "gh" in register "r"

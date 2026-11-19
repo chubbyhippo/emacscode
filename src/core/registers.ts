@@ -29,6 +29,19 @@ export class Registers {
     this.values.set(name, { kind: 'number', value });
   }
 
+  public prepareCopy(state: EditorState, name: string, hasPrefix: boolean): () => void {
+    Registers.validateName(name);
+    const [start, end] = state.regionBounds();
+    const text = state.text.slice(start, end);
+    if (hasPrefix && start !== end) {
+      state.text = state.text.slice(0, start) + state.text.slice(end);
+      state.point = start;
+      state.mark = start;
+    }
+    state.active = false;
+    return () => this.setText(name, text);
+  }
+
   public prepareIncrement(
     state: EditorState,
     name: string,

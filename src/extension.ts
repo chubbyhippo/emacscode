@@ -845,11 +845,9 @@ export function activate(context: vscode.ExtensionContext): void {
       }),
     );
   };
-  registerCommand('copyToRegister', (state, character) => {
-    const [start, end] = state.regionBounds();
-    const text = state.text.slice(start, end);
-    return () => registers.setText(character, text);
-  });
+  registerCommand('copyToRegister', (state, character, _count, hasPrefix) =>
+    registers.prepareCopy(state, character, hasPrefix),
+  );
   registerCommand('copyRectangleToRegister', (state, character, _count, hasPrefix) => {
     const [start, end] = state.regionBounds();
     const result = editRectangle(state.text, start, end, hasPrefix ? 'delete' : 'copy');

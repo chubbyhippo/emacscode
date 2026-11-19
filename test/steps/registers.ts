@@ -20,6 +20,15 @@ When(
     this.registers.prepareIncrement(this.registerState, name, amount, true)();
   },
 );
+When(
+  /^I copy the register region to "([^"]+)" with deletion (true|false)$/,
+  function (name, deletion) {
+    this.registers.prepareCopy(this.registerState, name, deletion === 'true')();
+  },
+);
+When('I prepare but reject a register copy to {string}', function (name) {
+  this.registers.prepareCopy(this.registerState, name, true);
+});
 When('I prepare but reject register increment for {string}', function (name) {
   this.registers.prepareIncrement(this.registerState, name, 4, true);
 });
