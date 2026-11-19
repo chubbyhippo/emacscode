@@ -1306,7 +1306,10 @@ export class EditorState {
     while (start > 0 && (this.text[start - 1] === ' ' || this.text[start - 1] === '\t')) start--;
     if (!backwardOnly)
       while (end < this.text.length && (this.text[end] === ' ' || this.text[end] === '\t')) end++;
-    if (start !== end) this.replace(start, end, '');
+    if (start !== end) {
+      this.replace(start, end, '');
+      this.active = false;
+    }
     this.done('delete');
   }
   public transposeLines(count: number, lineEnding = '\n'): void {

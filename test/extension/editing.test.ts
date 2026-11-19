@@ -1013,6 +1013,27 @@ describe('emacscode editor behavior', function () {
       assert.equal(document.getText(), 'left   right');
     });
   }
+  it('Given an active region When deleting spaces Then the mark deactivates and undo restores text', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a   b',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.deleteHorizontalSpace');
+    assert.equal(document.getText(), 'ab');
+    assert.ok(editor.selection.isEmpty);
+    assert.equal(editor.selection.active.character, 1);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [1, 0],
+    );
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'a   b');
+  });
   it('Given spacing When invoked repeatedly Then it cycles and undo restores the previous edit', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'left   right',

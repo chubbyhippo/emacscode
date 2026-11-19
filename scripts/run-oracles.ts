@@ -40,6 +40,7 @@ const tests = [
   'transpose-mark-oracle.js',
   'transpose-unicode-oracle.js',
   'whitespace-oracle.js',
+  'whitespace-mark-oracle.js',
   'cycle-spacing-oracle.js',
   'delete-blank-lines-oracle.js',
   'delete-indentation-oracle.js',

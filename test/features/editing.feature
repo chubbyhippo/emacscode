@@ -1231,6 +1231,22 @@ Feature: Emacs editing state
     Then the text is "left\n  right"
     And point is 4
 
+  Scenario: Whitespace deletion deactivates the mark only when text changes
+    Given text "a   b" at position 0
+    When I set the mark
+    And I move forward 2 character
+    And I delete horizontal whitespace around
+    Then the text is "ab"
+    And point is 1 and mark is 0
+    And the region is inactive
+    When I exchange point and mark
+    Then point is 0 and mark is 1
+    And the region is active
+    When I delete horizontal whitespace backward
+    Then the text is "ab"
+    And point is 0 and mark is 1
+    And the region is active
+
   Scenario: Move to indentation from inside a line
     Given text "  hello" at position 5
     When I move to indentation
