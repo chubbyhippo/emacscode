@@ -29,6 +29,7 @@ const tests = [
   'combining-word-oracle.js',
   'rectangle-oracle.js',
   'rectangle-register-oracle.js',
+  'increment-register-oracle.js',
   'zap-oracle.js',
   'word-case-oracle.js',
   'region-case-oracle.js',

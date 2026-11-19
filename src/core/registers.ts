@@ -1,3 +1,5 @@
+import type { EditorState } from './editor';
+
 export type RegisterValue =
   | { kind: 'text'; text: string }
   | { kind: 'number'; value: number }
@@ -27,11 +29,30 @@ export class Registers {
     this.values.set(name, { kind: 'number', value });
   }
 
-  public increment(name: string, amount: number): void {
+  public prepareIncrement(
+    state: EditorState,
+    name: string,
+    amount: number,
+    hasPrefix: boolean,
+  ): () => void {
     Registers.validateName(name);
-    const value = this.values.get(name);
-    if (value && value.kind !== 'number') throw new Error('Register does not contain a number');
-    this.setNumber(name, (value?.value ?? 0) + amount);
+    const current = this.values.get(name);
+    if (current?.kind === 'number') {
+      const value = current.value + amount;
+      if (!Number.isSafeInteger(value)) throw new Error('Register number must be a safe integer');
+      return () => this.setNumber(name, value);
+    }
+    if (current?.kind === 'rectangle')
+      throw new Error('Register does not contain a number or text');
+    const [start, end] = state.regionBounds();
+    const text = (current?.text ?? '') + state.text.slice(start, end);
+    if (hasPrefix && start !== end) {
+      state.text = state.text.slice(0, start) + state.text.slice(end);
+      state.point = start;
+      state.mark = start;
+    }
+    state.active = false;
+    return () => this.setText(name, text);
   }
 
   public read(name: string): RegisterValue {

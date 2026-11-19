@@ -1,6 +1,42 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const assert = require('node:assert/strict');
 const { Registers } = require('../../../out/core/registers');
+const { EditorState, KillRing } = require('../../../out/core/editor');
+
+Given('an active register region from {int} to {int} in {string}', function (mark, point, text) {
+  this.registerState = new EditorState(text, point, new KillRing());
+  this.registerState.mark = mark;
+  this.registerState.active = true;
+});
+When(
+  'I run register increment for {string} with prefix {int} and no deletion',
+  function (name, amount) {
+    this.registers.prepareIncrement(this.registerState, name, amount, false)();
+  },
+);
+When(
+  'I run register increment for {string} with prefix {int} and deletion',
+  function (name, amount) {
+    this.registers.prepareIncrement(this.registerState, name, amount, true)();
+  },
+);
+When('I prepare but reject register increment for {string}', function (name) {
+  this.registers.prepareIncrement(this.registerState, name, 4, true);
+});
+Then(
+  'the register buffer is {string} with point {int} and mark {int} inactive',
+  function (text, point, mark) {
+    assert.deepEqual(
+      {
+        text: this.registerState.text,
+        point: this.registerState.point,
+        mark: this.registerState.mark,
+        active: this.registerState.active,
+      },
+      { text, point, mark, active: false },
+    );
+  },
+);
 
 Given('a fresh register collection', function () {
   this.registers = new Registers();
@@ -20,12 +56,15 @@ Then(
     assert.deepEqual(this.registers.read(name), { kind: 'rectangle', rows: [first, second] });
   },
 );
+When('I store number {int} in register {string}', function (value, name) {
+  this.registers.setNumber(name, value);
+});
 When('I increment register {string} by {int}', function (name, amount) {
-  this.registers.increment(name, amount);
+  this.registers.prepareIncrement(new EditorState('', 0, new KillRing()), name, amount, true)();
 });
 When('I try to increment register {string} by {int}', function (name, amount) {
   try {
-    this.registers.increment(name, amount);
+    this.registers.prepareIncrement(new EditorState('', 0, new KillRing()), name, amount, true)();
   } catch (error) {
     this.registerError = error;
   }

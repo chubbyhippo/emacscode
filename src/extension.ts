@@ -872,19 +872,9 @@ export function activate(context: vscode.ExtensionContext): void {
     'numberToRegister',
     (_state, character, count) => () => registers.setNumber(character, count),
   );
-  registerCommand('incrementRegister', (_state, character, count) => {
-    const current = (() => {
-      try {
-        return registers.read(character);
-      } catch {
-        return undefined;
-      }
-    })();
-    if (current && current.kind !== 'number') throw new Error('Register does not contain a number');
-    if (!Number.isSafeInteger((current?.value ?? 0) + count))
-      throw new Error('Register number must be a safe integer');
-    return () => registers.increment(character, count);
-  });
+  registerCommand('incrementRegister', (state, character, count, hasPrefix) =>
+    registers.prepareIncrement(state, character, count, hasPrefix),
+  );
   for (const action of ['copy', 'kill', 'delete', 'clear', 'open'] as const) {
     const title = action[0].toUpperCase() + action.slice(1);
     context.subscriptions.push(

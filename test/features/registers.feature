@@ -11,10 +11,11 @@ Feature: Text and number registers
     Then a register error is reported
     And register "r" contains rectangle rows "bc" and "gh"
 
-  Scenario: An unset number can be incremented
+  Scenario: A numeric register can be incremented
     Given a fresh register collection
-    When I increment register "n" by 3
-    Then register "n" contains number 3
+    When I store number 4 in register "n"
+    And I increment register "n" by 3
+    Then register "n" contains number 7
 
   Scenario: Increment rejects a text register without changing it
     Given a fresh register collection
@@ -22,6 +23,28 @@ Feature: Text and number registers
     And I try to increment register "a" by 1
     Then a register error is reported
     And register "a" contains text "hello"
+
+  Scenario: Incrementing an empty register copies the active region
+    Given a fresh register collection
+    And an active register region from 1 to 4 in "abcdef"
+    When I run register increment for "r" with prefix 0 and no deletion
+    Then register "r" contains text "bcd"
+    And the register buffer is "abcdef" with point 4 and mark 1 inactive
+
+  Scenario: A zero prefix appends the reversed region and deletes it
+    Given a fresh register collection
+    And I store text "old" in register "r"
+    And an active register region from 4 to 1 in "abcdef"
+    When I run register increment for "r" with prefix 0 and deletion
+    Then register "r" contains text "oldbcd"
+    And the register buffer is "aef" with point 1 and mark 1 inactive
+
+  Scenario: A prefixed register update can be rejected before commit
+    Given a fresh register collection
+    And I store text "old" in register "r"
+    And an active register region from 1 to 4 in "abcdef"
+    When I prepare but reject register increment for "r"
+    Then register "r" contains text "old"
 
   Scenario: An empty register cannot be read
     Given a fresh register collection

@@ -1662,6 +1662,55 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.insertRegister', 'a');
     assert.equal(editor.document.getText(), 'alpha betaalpha');
   });
+  it('Given a text register When appending and cutting a region Then the edit and register are preserved', async function () {
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardWord');
+    await vscode.commands.executeCommand('emacscode.incrementRegister', 'v');
+    assert.equal(editor.document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.endOfBuffer');
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.backwardWord');
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.incrementRegister', 'v');
+    assert.equal(editor.document.getText(), 'alpha ');
+    assert.equal(editor.selection.active.character, 6);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(editor.document.getText(), 'alpha beta');
+    await vscode.commands.executeCommand('emacscode.endOfBuffer');
+    await vscode.commands.executeCommand('emacscode.insertRegister', 'v');
+    assert.equal(editor.document.getText(), 'alpha betaalphabeta');
+  });
+  it('Given a rejected read-only register cut Then the previous register contents survive', async function () {
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardWord');
+    await vscode.commands.executeCommand('emacscode.copyToRegister', 'w');
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-register-readonly',
+      {
+        provideTextDocumentContent: () => 'protected',
+      },
+    );
+    try {
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-register-readonly:/text'),
+      );
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.setMark');
+      await vscode.commands.executeCommand('emacscode.forwardWord');
+      await vscode.commands.executeCommand('emacscode.universalArgument');
+      await vscode.commands.executeCommand('emacscode.incrementRegister', 'w');
+      assert.equal(document.getText(), 'protected');
+      const destination = await vscode.workspace.openTextDocument({
+        content: '',
+        language: 'plaintext',
+      });
+      editor = await vscode.window.showTextDocument(destination);
+      await vscode.commands.executeCommand('emacscode.insertRegister', 'w');
+      assert.equal(destination.getText(), 'alpha');
+    } finally {
+      provider.dispose();
+    }
+  });
   it('Given a register command after yank When yank-pop runs Then it does not replace text', async function () {
     await vscode.commands.executeCommand('emacscode.killWord');
     await vscode.commands.executeCommand('emacscode.yank');
