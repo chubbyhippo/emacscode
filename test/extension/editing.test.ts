@@ -521,6 +521,31 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(), 'a\\ b');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given structural marking When repeated and prefixed Then the region extends without moving point', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one (two) x',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.markSexp');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [3, 0],
+    );
+    await vscode.commands.executeCommand('emacscode.markSexp');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [9, 0],
+    );
+    await vscode.commands.executeCommand('emacscode.digit0');
+    await vscode.commands.executeCommand('emacscode.markSexp');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [9, 0],
+    );
+    assert.equal(document.getText(), 'one (two) x');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given structural editing When invoked Then text, ring and undo remain coherent', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one (two) three',

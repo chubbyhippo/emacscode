@@ -205,6 +205,38 @@ Feature: Emacs editing state
     When I yank
     Then the text is "one (two) three"
 
+  @SC-sexp-mark-repeat
+  Scenario: Repeated structural marking extends the active region
+    Given text "one (two) x" at position 0
+    When I mark a sexp
+    Then point is 0 and mark is 3
+    And the region is active
+    When I mark a sexp
+    Then point is 0 and mark is 9
+    And the text is "one (two) x"
+
+  @SC-sexp-mark-reversed
+  Scenario: A negative prefix extends a reversed region backward
+    Given text "one (two) x" at position 11
+    When I mark a sexp with prefix -1
+    Then point is 11 and mark is 10
+    And the region is active
+    When I mark a sexp
+    Then point is 11 and mark is 4
+    And the text is "one (two) x"
+
+  @SC-sexp-mark-failure
+  Scenario: Failed structural marking preserves the active region and kill ring
+    Given text "a) b" at position 0
+    When I add an older kill "older"
+    And I set the mark
+    And I mark a sexp with prefix 2
+    Then an error is reported
+    And point is 0 and mark is 0
+    And the region is active
+    And the newest kill is "older"
+    And the text is "a) b"
+
   @SC-sexp-transpose
   Scenario: Transpose adjacent expressions
     Given text "(one) (two)" at position 5

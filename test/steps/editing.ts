@@ -262,6 +262,13 @@ When('I mark a sexp', function () {
     this.error = error;
   }
 });
+When('I mark a sexp with prefix {int}', function (count) {
+  try {
+    this.state.markSexp(count, true);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I kill a sexp', function () {
   try {
     this.state.killSexp(1);

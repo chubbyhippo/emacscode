@@ -21,6 +21,7 @@ const tests = [
   'structure-oracle.js',
   'structure-escape-oracle.js',
   'sexp-edit-oracle.js',
+  'mark-sexp-oracle.js',
   'paragraph-oracle.js',
   'fill-paragraph-oracle.js',
   'dabbrev-oracle.js',
