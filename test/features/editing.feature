@@ -148,6 +148,25 @@ Feature: Emacs editing state
     Then point is 4 and mark is 0
     And the text is "one (two [three]) end"
 
+  @SC-structure-escaped-atom
+  Scenario: Escaped spaces join adjacent words into one expression
+    Given text with an escaped space at position 0
+    When I set the mark
+    And I move 1 sexp expressions
+    Then point is 4 and mark is 0
+    And the region is active
+    When I move -1 sexp expressions
+    Then point is 0 and mark is 0
+
+  @SC-structure-incomplete-escape
+  Scenario: A trailing escape fails forward movement and preserves the mark
+    Given text with a trailing escape at position 0
+    When I set the mark
+    And I move 1 sexp expressions
+    Then an error is reported
+    And point is 0 and mark is 0
+    And the region is active
+
   @SC-structure-unbalanced
   Scenario: Unbalanced expressions report an error without changing the region
     Given text "(unfinished" at position 0

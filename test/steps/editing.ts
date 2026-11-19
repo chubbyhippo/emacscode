@@ -11,6 +11,12 @@ const unescape = (value) => value.replace(/\\r/g, '\r').replace(/\\n/g, '\n').re
 Given('text {string} at position {int}', function (text, point) {
   this.state = new EditorState(unescape(text), point, this.ring);
 });
+Given('text with an escaped space at position {int}', function (point) {
+  this.state = new EditorState('a\\ b', point, this.ring);
+});
+Given('text with a trailing escape at position {int}', function (point) {
+  this.state = new EditorState('a\\', point, this.ring);
+});
 Given('a fresh prefix argument', function () {
   this.prefix = new PrefixArgument();
 });

@@ -19,6 +19,7 @@ const tests = [
   'goto-line-oracle.js',
   'position-page-oracle.js',
   'structure-oracle.js',
+  'structure-escape-oracle.js',
   'sexp-edit-oracle.js',
   'paragraph-oracle.js',
   'fill-paragraph-oracle.js',

@@ -10,7 +10,7 @@ export class StructureMovementError extends Error {
 type Token = {
   start: number;
   end: number;
-  kind: 'open' | 'close' | 'atom' | 'invalid';
+  kind: 'open' | 'close' | 'atom' | 'invalid' | 'incomplete';
   character: string;
 };
 
@@ -32,11 +32,6 @@ function tokens(text: string): Token[] {
         character,
         kind: '([{'.includes(character) ? 'open' : 'close',
       });
-    } else if (character === '\\') {
-      position += character.length;
-      if (position < text.length)
-        position += String.fromCodePoint(text.codePointAt(position)!).length;
-      result.push({ start, end: position, character, kind: 'atom' });
     } else if (character === '"') {
       position++;
       let closed = false;
@@ -49,14 +44,27 @@ function tokens(text: string): Token[] {
         }
       }
       result.push({ start, end: position, character, kind: closed ? 'atom' : 'invalid' });
-    } else if (/[\p{L}\p{N}_]/u.test(character)) {
-      position += character.length;
+    } else if (character === '\\' || /[\p{L}\p{N}_]/u.test(character)) {
+      let incompleteEscape = false;
       while (position < text.length) {
         const next = String.fromCodePoint(text.codePointAt(position)!);
-        if (!/[\p{L}\p{N}_\p{M}]/u.test(next)) break;
-        position += next.length;
+        if (next === '\\') {
+          position += next.length;
+          if (position === text.length) {
+            incompleteEscape = true;
+            break;
+          }
+          position += String.fromCodePoint(text.codePointAt(position)!).length;
+        } else if (/[\p{L}\p{N}_\p{M}]/u.test(next)) {
+          position += next.length;
+        } else break;
       }
-      result.push({ start, end: position, character, kind: 'atom' });
+      result.push({
+        start,
+        end: position,
+        character,
+        kind: incompleteEscape ? 'incomplete' : 'atom',
+      });
     } else {
       position += character.length;
     }
@@ -106,9 +114,9 @@ export function moveListDepth(
     let found: Token | undefined;
     for (; index >= 0 && index < items.length; index += forward ? 1 : -1) {
       const token = items[index];
-      if (token.kind === 'invalid')
-        throw new StructureMovementError('Unterminated string', position);
-      if (token.kind === 'atom') continue;
+      if (token.kind === 'invalid' || (token.kind === 'incomplete' && forward))
+        throw new StructureMovementError('Unterminated expression', position);
+      if (token.kind === 'atom' || token.kind === 'incomplete') continue;
       if (token.kind === desired) {
         if (depth === 0) {
           found = token;
@@ -126,7 +134,17 @@ export function moveListDepth(
 export function moveStructure(text: string, origin: number, count: number, lists = false): number {
   if (!Number.isSafeInteger(count)) throw new StructureMovementError('Invalid count');
   if (count === 0) return origin;
-  const items = tokens(text);
+  let items = tokens(text);
+  if (count > 0 && origin < text.length && '()[]{}'.includes(text[origin])) {
+    let escapes = 0;
+    while (origin > escapes && text[origin - escapes - 1] === '\\') escapes++;
+    if (escapes % 2 === 1)
+      items = tokens(text.slice(origin)).map((token) => ({
+        ...token,
+        start: token.start + origin,
+        end: token.end + origin,
+      }));
+  }
   const matches: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
   let position = origin;
   for (let iteration = 0; iteration < Math.abs(count); iteration++) {
@@ -139,7 +157,8 @@ export function moveStructure(text: string, origin: number, count: number, lists
     let moved = false;
     for (; index >= 0 && index < items.length; index += forward ? 1 : -1) {
       const token = items[index];
-      if (token.kind === 'invalid') throw new StructureMovementError('Unterminated string', origin);
+      if (token.kind === 'invalid' || (token.kind === 'incomplete' && forward))
+        throw new StructureMovementError('Unterminated expression', origin);
       const opening = forward ? token.kind === 'open' : token.kind === 'close';
       const closing = forward ? token.kind === 'close' : token.kind === 'open';
       if (opening) {

@@ -501,6 +501,26 @@ describe('emacscode editor behavior', function () {
     assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [0, 0]);
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given escaped expressions When moving Then the active mark and text are preserved', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'a\\ b',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardSexp');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 4],
+    );
+    await vscode.commands.executeCommand('emacscode.backwardSexp');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 0],
+    );
+    assert.equal(document.getText(), 'a\\ b');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given structural editing When invoked Then text, ring and undo remain coherent', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one (two) three',
