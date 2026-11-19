@@ -41,6 +41,7 @@ const tests = [
   'region-case-oracle.js',
   'transpose-oracle.js',
   'transpose-words-oracle.js',
+  'transpose-sexp-oracle.js',
   'transpose-lines-oracle.js',
   'transpose-mark-oracle.js',
   'transpose-unicode-oracle.js',

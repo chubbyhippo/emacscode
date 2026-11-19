@@ -283,6 +283,13 @@ When('I transpose sexps', function () {
     this.error = error;
   }
 });
+When('I transpose sexps with count {int}', function (count) {
+  try {
+    this.state.transposeSexps(count);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I fill a paragraph to width {int}', function (width) {
   try {
     this.state.fillParagraph(width, this.state.text.includes('\r\n') ? '\r\n' : '\n');

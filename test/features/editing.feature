@@ -259,6 +259,37 @@ Feature: Emacs editing state
     Then the text is "(two) (one)"
     And point is 11
 
+  @SC-sexp-transpose-negative
+  Scenario: A negative prefix moves the previous expression backward
+    Given text "one two three" at position 0
+    When I set the mark
+    And I move forward 7 character
+    And I transpose sexps with count -1
+    Then the text is "two one three"
+    And point is 3 and mark is 0
+    And the region is inactive
+
+  @SC-sexp-transpose-empty
+  Scenario: Transposing at an empty buffer preserves an active mark
+    Given text "" at position 0
+    When I set the mark
+    And I transpose sexps
+    Then point is 0 and mark is 0
+    And the region is active
+    And the text is ""
+
+  @SC-sexp-transpose-overlap
+  Scenario: Overlapping marked expressions report an error without editing
+    Given text "one two three" at position 0
+    When I set the mark
+    And I add an older kill "older"
+    And I transpose sexps with count 0
+    Then an error is reported
+    And point is 0 and mark is 0
+    And the region is active
+    And the newest kill is "older"
+    And the text is "one two three"
+
   @SC-fill-paragraph
   Scenario: Fill plain text while preserving the paragraph boundary
     Given text "one two three four\r\n\r\nnext" at position 0

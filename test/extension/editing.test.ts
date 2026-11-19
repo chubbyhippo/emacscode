@@ -568,6 +568,25 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  it('Given a negative prefix When transposing expressions Then point, mark and undo follow the edit', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one two three',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit7');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.negativeArgument');
+    await vscode.commands.executeCommand('emacscode.transposeSexps');
+    assert.equal(document.getText(), 'two one three');
+    assert.equal(editor.selection.active.character, 3);
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.equal(editor.selection.active.character, 0);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'one two three');
+  });
   it('Given a failed structural kill Then the next kill starts a separate ring entry', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one ) two',

@@ -1423,19 +1423,38 @@ export class EditorState {
     if (!Number.isSafeInteger(count)) throw new Error('Invalid transpose count');
     const originalPoint = this.point;
     const originalMark = this.mark;
-    const pair = (origin: number, distance: number): [number, number] => {
-      const first = moveStructure(this.text, origin, distance);
-      return [first, moveStructure(this.text, first, -distance)];
+    const pair = (distance: number): [number, number] => {
+      const word = (character: string | undefined): boolean =>
+        character !== undefined && /[\p{L}\p{N}_\p{M}]/u.test(character);
+      const separator = (character: string | undefined): boolean =>
+        character !== undefined && !word(character) && !'()[]{}"\\'.includes(character);
+      if (distance > 0 ? word(this.text[this.point]) : word(this.text[this.point - 1])) {
+        if (distance > 0) while (word(this.text[this.point - 1])) this.point--;
+        else while (word(this.text[this.point])) this.point++;
+        return [moveStructure(this.text, this.point, distance), this.point];
+      }
+      if (distance > 0) while (separator(this.text[this.point - 1])) this.point--;
+      else while (separator(this.text[this.point])) this.point++;
+      const end = moveStructure(this.text, this.point, distance);
+      if (distance > 0) while (separator(this.text[this.point])) this.point++;
+      else while (separator(this.text[this.point - 1])) this.point--;
+      return [end, this.point];
     };
     let first: [number, number];
     let second: [number, number];
     if (count === 0) {
-      if (this.mark === undefined) throw new Error('No mark set');
-      first = pair(this.point, 1);
-      second = pair(this.mark, 1);
+      try {
+        first = pair(1);
+        if (this.mark === undefined) throw new Error('No mark set');
+        this.point = this.mark;
+        second = pair(1);
+      } finally {
+        this.point = originalPoint;
+      }
     } else {
-      first = pair(this.point, -1);
-      second = pair(count > 0 ? first[1] : first[0], count);
+      first = pair(-1);
+      if (count < 0) this.point = first[0];
+      second = pair(count);
     }
     let firstStart = Math.min(...first);
     let firstEnd = Math.max(...first);
@@ -1445,8 +1464,10 @@ export class EditorState {
       [firstStart, secondStart] = [secondStart, firstStart];
       [firstEnd, secondEnd] = [secondEnd, firstEnd];
     }
-    if (firstStart === firstEnd || secondStart === secondEnd || firstEnd > secondStart)
+    if (firstEnd > secondStart) {
+      if (count === 0) this.point = originalPoint;
       throw new Error('Cannot transpose expressions');
+    }
     const left = this.text.slice(firstStart, firstEnd);
     const right = this.text.slice(secondStart, secondEnd);
     const middle = this.text.slice(firstEnd, secondStart);
@@ -1461,13 +1482,17 @@ export class EditorState {
       else if (position >= deletionStart) position = deletionStart;
       return position;
     };
-    const before = this.text;
-    this.replace(firstStart, secondEnd, right + middle + left);
-    if (originalMark !== undefined) this.mark = transform(originalMark);
+    if (left.length || right.length) {
+      this.replace(firstStart, secondEnd, right + middle + left);
+      if (originalMark !== undefined) this.mark = transform(originalMark);
+      this.active = false;
+    }
     this.point =
       count === 0 ? (this.mark ?? originalPoint) : count > 0 ? second[0] : second[0] + right.length;
-    if (count === 0) this.mark = transform(originalPoint);
-    this.active = count === 0 && this.text === before;
+    if (count === 0) {
+      this.mark = transform(originalPoint);
+      if (!left.length && !right.length) this.active = true;
+    }
     this.done('transpose');
   }
   public transposeWords(count: number): void {
