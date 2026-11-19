@@ -1254,6 +1254,14 @@ Feature: Emacs editing state
     When I move to indentation
     Then point is 2
 
+  Scenario: Indentation respects Unicode space syntax while retaining the mark
+    Given text "  hello" at position 7
+    When I set the mark
+    And I move to indentation
+    Then point is 2 and mark is 7
+    And the region is active
+    And the text is "  hello"
+
   Scenario: Indentation on an empty line stays at its boundary
     Given text "one\n\ntwo" at position 4
     When I move to indentation

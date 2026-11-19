@@ -1135,6 +1135,29 @@ describe('emacscode editor behavior', function () {
     assert.equal(editor.selection.active.character, 5);
     assert.equal(document.getText(), '  first\n    second');
   });
+  it('Given Unicode indentation and an active mark When moving to indentation Then the prefix is consumed', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: '\u2003\u00a0hello',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const position = new vscode.Position(0, 7);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit3');
+    await vscode.commands.executeCommand('emacscode.backToIndentation');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [7, 2],
+    );
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [7, 3],
+    );
+    assert.equal(document.getText(), '\u2003\u00a0hello');
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a numeric prefix When killing a line Then it includes the newline and undo restores it', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha\nbeta',

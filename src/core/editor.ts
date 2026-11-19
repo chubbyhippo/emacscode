@@ -273,7 +273,11 @@ export class EditorState {
   }
   public backToIndentation(): void {
     let position = this.point === 0 ? 0 : this.text.lastIndexOf('\n', this.point - 1) + 1;
-    while (position < this.text.length && /[ \t\f\v]/.test(this.text[position])) position++;
+    while (
+      position < this.text.length &&
+      /[ \t\f\u00a0\u2000-\u200b\u202f\u205f\u3000]/.test(this.text[position])
+    )
+      position++;
     this.point = position;
     this.done('move');
   }

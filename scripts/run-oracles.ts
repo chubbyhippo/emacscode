@@ -45,6 +45,7 @@ const tests = [
   'delete-blank-lines-oracle.js',
   'delete-indentation-oracle.js',
   'indentation-oracle.js',
+  'indentation-unicode-oracle.js',
   'mark-word-oracle.js',
   'kill-line-oracle.js',
   'region-oracle.js',
