@@ -1448,6 +1448,17 @@ describe('emacscode editor behavior', function () {
     assert.ok(editor.selection.isEqual(external));
     assert.equal(document.getText(), 'one two one');
   });
+  it('Given search shortcuts Then their handlers are registered on activation', async function () {
+    const commands = await vscode.commands.getCommands(true);
+    for (const command of [
+      'emacscode.isearchForward',
+      'emacscode.isearchBackward',
+      'emacscode.isearchCancel',
+      'emacscode.isearchPreviousHistory',
+      'emacscode.isearchNextHistory',
+    ])
+      assert.ok(commands.includes(command), `${command} is not registered`);
+  });
   it('Given search shortcuts Then they are limited to the search input context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     for (const [key, command] of [
