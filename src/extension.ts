@@ -13,6 +13,7 @@ import {
   PrefixArgument,
   RegionCaseError,
   TabStopError,
+  ZapSearchError,
 } from './core/editor';
 import { StructureMovementError } from './core/structure';
 import { SearchController } from './search';
@@ -791,7 +792,7 @@ export function activate(context: vscode.ExtensionContext): void {
             }
           } catch (error) {
             if (!editCommitted) ring.restore(ringSnapshot.entries, ringSnapshot.index);
-            states.delete(editor);
+            if (!(error instanceof ZapSearchError)) states.delete(editor);
             throw error;
           }
         })

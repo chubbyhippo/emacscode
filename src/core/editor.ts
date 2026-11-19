@@ -33,6 +33,12 @@ export class FillParagraphError extends Error {}
 
 export class AbbreviationError extends Error {}
 
+export class ZapSearchError extends Error {
+  constructor() {
+    super('Character not found');
+  }
+}
+
 export class OpenLineError extends Error {
   constructor() {
     super('Repetition argument has to be non-negative');
@@ -892,7 +898,10 @@ export class EditorState {
           }
           cursor += current.length;
         }
-        if (match < 0) throw new Error('Character not found');
+        if (match < 0) {
+          this.done('other');
+          throw new ZapSearchError();
+        }
         position = match + String.fromCodePoint(this.text.codePointAt(match)!).length;
       } else {
         for (let cursor = position; cursor > 0;) {
@@ -909,7 +918,10 @@ export class EditorState {
             break;
           }
         }
-        if (match < 0) throw new Error('Character not found');
+        if (match < 0) {
+          this.done('other');
+          throw new ZapSearchError();
+        }
         position = match;
       }
     }

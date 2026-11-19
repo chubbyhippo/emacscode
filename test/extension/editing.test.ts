@@ -1521,6 +1521,30 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  it('Given an active mark When zap cannot find its target Then selection and mark survive', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.setMark');
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      await vscode.commands.executeCommand('emacscode.digit3');
+      await vscode.commands.executeCommand('emacscode.zapToChar', 'a');
+      assert.equal(editor.document.getText(), 'alpha beta');
+      assert.deepEqual(
+        [editor.selection.anchor.character, editor.selection.active.character],
+        [0, 2],
+      );
+      assert.equal(await vscode.env.clipboard.readText(), clipboard);
+      await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+      assert.deepEqual(
+        [editor.selection.anchor.character, editor.selection.active.character],
+        [2, 0],
+      );
+      await vscode.commands.executeCommand('emacscode.cancel');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given incremental search When repeating and cancelling Then point returns to its origin', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one two one',

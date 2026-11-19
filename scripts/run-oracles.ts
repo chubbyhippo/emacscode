@@ -33,6 +33,7 @@ const tests = [
   'copy-register-oracle.js',
   'increment-register-oracle.js',
   'zap-oracle.js',
+  'zap-failure-oracle.js',
   'word-case-oracle.js',
   'region-case-oracle.js',
   'transpose-oracle.js',

@@ -932,6 +932,21 @@ Feature: Emacs editing state
     And the text is "alpha beta"
     And point is 0
 
+  Scenario: A failed zap preserves an active mark and the previous kill
+    Given text "alpha beta" at position 0
+    When I set the mark
+    And I move forward 2 character
+    And I add an older kill "older"
+    And I zap 3 occurrences of "a"
+    Then an error is reported
+    And the text is "alpha beta"
+    And point is 2 and mark is 0
+    And the region is active
+    And the newest kill is "older"
+    When I exchange point and mark
+    Then point is 0 and mark is 2
+    And the region is active
+
   Scenario: Zap handles Unicode code points
     Given text "a😀b😀c" at position 0
     When I zap 2 occurrences of "😀"
