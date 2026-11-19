@@ -863,7 +863,13 @@ export class EditorState {
     return this.kill(this.point, end, count < 0 ? 'backward' : 'forward');
   }
   public killSexp(count: number): string {
-    const end = moveStructure(this.text, this.point, count);
+    let end: number;
+    try {
+      end = moveStructure(this.text, this.point, count);
+    } catch (error) {
+      this.done('other');
+      throw error;
+    }
     return this.kill(this.point, end, count < 0 ? 'backward' : 'forward');
   }
   public killSentence(count: number): string {

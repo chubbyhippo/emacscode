@@ -205,6 +205,21 @@ Feature: Emacs editing state
     When I yank
     Then the text is "one (two) three"
 
+  @SC-sexp-kill-recovery
+  Scenario: A failed structural kill breaks the consecutive kill chain
+    Given text "one ) two" at position 0
+    When I add an older kill "older"
+    And I kill a sexp
+    Then the text is " ) two"
+    And the kill ring contains "one" then "older"
+    When I kill a sexp
+    Then an error is reported
+    And the text is " ) two"
+    And the kill ring contains "one" then "older"
+    When I kill the next word
+    Then the text is ""
+    And the newest kill is " ) two"
+
   @SC-sexp-mark-repeat
   Scenario: Repeated structural marking extends the active region
     Given text "one (two) x" at position 0

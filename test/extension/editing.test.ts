@@ -568,6 +568,28 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  it('Given a failed structural kill Then the next kill starts a separate ring entry', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one ) two',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.killSexp');
+      assert.equal(document.getText(), ' ) two');
+      await vscode.commands.executeCommand('emacscode.killSexp');
+      assert.equal(document.getText(), ' ) two');
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(document.getText(), '');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(document.getText(), ' ) two');
+      await vscode.commands.executeCommand('emacscode.yankPop');
+      assert.equal(document.getText(), 'one');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given quoted input and abbreviation When invoked Then edits are undoable', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha al',
