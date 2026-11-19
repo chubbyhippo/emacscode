@@ -19,6 +19,9 @@ class Selection extends Range {
   ) {
     super(anchor, active);
   }
+  isEqual(other: Selection) {
+    return this.anchor.offset === other.anchor.offset && this.active.offset === other.active.offset;
+  }
 }
 const input = {
   value: '',
@@ -50,7 +53,12 @@ const applied = new Map();
 const editor = {
   document: doc,
   selections: [new Selection(new Position(0), new Position(0))],
-  selection: new Selection(new Position(0), new Position(0)),
+  get selection() {
+    return this.selections[0];
+  },
+  set selection(selection: Selection) {
+    this.selections = [selection];
+  },
   setDecorations: (type, ranges) =>
     applied.set(
       type,
@@ -73,6 +81,10 @@ const vscode = {
       return decoration;
     },
     onDidChangeActiveTextEditor: () => ({ dispose() {} }),
+    onDidChangeTextEditorSelection: (callback) => {
+      listeners.selection = callback;
+      return { dispose() {} };
+    },
     showWarningMessage() {},
   },
   workspace: { onDidChangeTextDocument: () => ({ dispose() {} }) },
@@ -114,4 +126,47 @@ assert.deepEqual(applied.get(decorations[0]), []);
 assert.deepEqual(applied.get(decorations[1]), []);
 search.cancel();
 assert.ok(decorations.every((decoration) => decoration.disposed));
+
+for (const action of ['repeat', 'change', 'cancel', 'hide', 'dispose']) {
+  editor.selection = new Selection(new Position(0), new Position(0));
+  search.start(editor, 1, 'one');
+  const external = new Selection(new Position(5), new Position(4));
+  editor.selection = external;
+  if (action === 'repeat') search.repeat(1);
+  if (action === 'change') listeners.change('two');
+  if (action === 'cancel') search.cancel();
+  if (action === 'hide') listeners.hide();
+  if (action === 'dispose') search.dispose();
+  assert.equal(editor.selection, external, action);
+  search.dispose();
+  assert.equal(editor.selection, external, action);
+  assert.ok(decorations.every((decoration) => decoration.disposed));
+}
+editor.selection = new Selection(new Position(0), new Position(0));
+search.start(editor, 1, 'one');
+const multiple = [
+  new Selection(new Position(2), new Position(2)),
+  new Selection(new Position(7), new Position(7)),
+];
+editor.selections = multiple;
+search.repeat(1);
+assert.equal(editor.selections, multiple);
+assert.ok(decorations.every((decoration) => decoration.disposed));
+
+editor.selection = new Selection(new Position(0), new Position(0));
+search.start(editor, 1, 'one');
+listeners.selection({ textEditor: editor });
+search.repeat(1);
+assert.equal(editor.selection.active.offset, 7);
+const external = new Selection(new Position(4), new Position(4));
+editor.selection = external;
+listeners.selection({ textEditor: editor });
+assert.ok(decorations.every((decoration) => decoration.disposed));
+search.cancel();
+assert.equal(editor.selection, external);
+
+editor.selection = new Selection(new Position(0), new Position(0));
+search.start(editor, 1, 'one');
+search.cancel();
+assert.equal(editor.selection.active.offset, 0);
 console.log('Search decoration rendering and cleanup verified');

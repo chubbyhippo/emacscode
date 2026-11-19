@@ -1433,6 +1433,21 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('emacscode.isearchCancel');
     assert.equal(editor.selection.active.character, 0);
   });
+  it('Given incremental search When the selection changes externally Then it is preserved', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'one two one',
+      language: 'plaintext',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.searchForward', 'one');
+    assert.equal(editor.selection.active.character, 3);
+    const external = new vscode.Selection(0, 6, 0, 4);
+    editor.selection = external;
+    await vscode.commands.executeCommand('emacscode.isearchForward');
+    await vscode.commands.executeCommand('emacscode.isearchCancel');
+    assert.ok(editor.selection.isEqual(external));
+    assert.equal(document.getText(), 'one two one');
+  });
   it('Given search shortcuts Then they are limited to the search input context', function () {
     const extension = vscode.extensions.all.find((item) => item.packageJSON.name === 'emacscode');
     for (const [key, command] of [

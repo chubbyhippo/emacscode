@@ -4,6 +4,7 @@ import { IncrementalSearch, SearchDirection } from './core/search';
 type SearchState = {
   editor: vscode.TextEditor;
   origin: vscode.Selection;
+  selection: vscode.Selection;
   version: number;
   input: vscode.InputBox;
   decorations: vscode.TextEditorDecorationType;
@@ -26,6 +27,7 @@ export class SearchController implements vscode.Disposable {
     const state: SearchState = {
       editor,
       origin: editor.selection,
+      selection: editor.selection,
       version: editor.document.version,
       input,
       decorations: vscode.window.createTextEditorDecorationType({
@@ -54,7 +56,9 @@ export class SearchController implements vscode.Disposable {
     );
     state.listeners.push(
       input.onDidAccept(() => {
-        if (!state.model.failed) this.disposeState(false);
+        if (this.state !== state) return;
+        if (!this.ownsSelection(state)) this.disposeState(false, false);
+        else if (!state.model.failed) this.disposeState(false);
       }),
     );
     state.listeners.push(
@@ -71,6 +75,12 @@ export class SearchController implements vscode.Disposable {
     state.listeners.push(
       vscode.window.onDidChangeActiveTextEditor((active) => {
         if (active !== editor) this.disposeState(true);
+      }),
+    );
+    state.listeners.push(
+      vscode.window.onDidChangeTextEditorSelection((event) => {
+        if (this.state === state && event.textEditor === editor && !this.ownsSelection(state))
+          this.disposeState(false, false);
       }),
     );
     input.show();
@@ -110,6 +120,10 @@ export class SearchController implements vscode.Disposable {
     state.model.setQuery(query);
     this.render(state);
   }
+  private ownsSelection(state: SearchState): boolean {
+    const selections = state.editor.selections;
+    return selections.length === 1 && selections[0].isEqual(state.selection);
+  }
   private render(state: SearchState): void {
     if (
       this.state !== state ||
@@ -117,6 +131,10 @@ export class SearchController implements vscode.Disposable {
       state.editor.document.version !== state.version
     )
       return;
+    if (!this.ownsSelection(state)) {
+      this.disposeState(false, false);
+      return;
+    }
     const { editor, input, model } = state;
     const count = model.matchCount;
     input.title = `${count ? `${count.current}/${count.total} ` : ''}${model.failed ? 'Failing ' : ''}${model.wrapped ? 'Wrapped ' : ''}I-search ${model.direction === 1 ? 'forward' : 'backward'}`;
@@ -152,18 +170,20 @@ export class SearchController implements vscode.Disposable {
       const begin = editor.document.positionAt(model.match.start);
       const end = editor.document.positionAt(model.match.end);
       const point = editor.document.positionAt(model.point);
-      editor.selection = new vscode.Selection(point, point);
+      state.selection = new vscode.Selection(point, point);
+      editor.selection = state.selection;
       editor.revealRange(new vscode.Range(begin, end));
     } else {
-      editor.selection = state.origin;
+      state.selection = state.origin;
+      editor.selection = state.selection;
     }
   }
-  private disposeState(restore: boolean): void {
+  private disposeState(restore: boolean, saveHistory = true): void {
     const state = this.state;
     if (!state) return;
     this.state = undefined;
     void vscode.commands.executeCommand('setContext', 'emacscode.isearchActive', false);
-    if (!restore && !state.model.failed && state.model.query)
+    if (saveHistory && !restore && !state.model.failed && state.model.query)
       this.history = [
         state.model.query,
         ...this.history.filter((query) => query !== state.model.query),
@@ -171,7 +191,8 @@ export class SearchController implements vscode.Disposable {
     if (
       restore &&
       !state.editor.document.isClosed &&
-      state.editor.document.version === state.version
+      state.editor.document.version === state.version &&
+      this.ownsSelection(state)
     )
       state.editor.selection = state.origin;
     for (const listener of state.listeners) listener.dispose();
