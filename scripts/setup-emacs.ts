@@ -11,12 +11,18 @@ const { pipeline } = require('node:stream/promises');
 const root = path.resolve(__dirname, '../..');
 const installPath = path.join(root, '.emacs-oracle');
 const windowsArchive = {
-  url: 'https://ftp.gnu.org/gnu/emacs/windows/emacs-31/emacs-31.1_1.zip',
+  urls: [
+    'https://ftp.gnu.org/gnu/emacs/windows/emacs-31/emacs-31.1_1.zip',
+    'https://mirror.freedif.org/GNU/emacs/windows/emacs-31/emacs-31.1_1.zip',
+  ],
   hash: '02856997d64c42e1e267b12b03ed67ff19a0599983e2f5871637077f7d12a92e',
   name: 'emacs.zip',
 };
 const sourceArchive = {
-  url: 'https://ftp.gnu.org/gnu/emacs/emacs-31.1.tar.gz',
+  urls: [
+    'https://ftp.gnu.org/gnu/emacs/emacs-31.1.tar.gz',
+    'https://mirror.freedif.org/GNU/emacs/emacs-31.1.tar.gz',
+  ],
   hash: '3cad7fd1466c0e24867df8d2609da3ac75abc90d7c4c0175e410e9be46d4092a',
   name: 'emacs.tar.gz',
 };
@@ -57,6 +63,27 @@ async function hashFile(file: string): Promise<string> {
   const hash = createHash('sha256');
   for await (const chunk of fs.createReadStream(file)) hash.update(chunk);
   return hash.digest('hex');
+}
+
+export async function downloadArchive(
+  urls: string[],
+  archive: string,
+  hash: string,
+): Promise<void> {
+  const errors: string[] = [];
+  for (const url of urls) {
+    try {
+      console.log(`Downloading GNU Emacs 31.1 from ${url}`);
+      await pipeline(await download(url), fs.createWriteStream(archive, { flags: 'wx' }));
+      if ((await hashFile(archive)) !== hash)
+        throw new Error('Emacs archive SHA-256 mismatch; download discarded');
+      return;
+    } catch (error) {
+      await fsp.rm(archive, { force: true });
+      errors.push(`${url}: ${error.message}`);
+    }
+  }
+  throw new Error(`Emacs download failed from all sources: ${errors.join('; ')}`);
 }
 
 export function buildSource(
@@ -112,13 +139,13 @@ export async function setup(
   const staging = await fsp.mkdtemp(path.join(path.dirname(target), '.emacs-setup-'));
   const archive = path.join(staging, release.name);
   try {
-    if (options.archive) await fsp.copyFile(options.archive, archive);
-    else {
-      console.log(`Downloading GNU Emacs 31.1 from ${release.url}`);
-      await pipeline(await download(release.url), fs.createWriteStream(archive, { flags: 'wx' }));
+    if (options.archive) {
+      await fsp.copyFile(options.archive, archive);
+      if ((await hashFile(archive)) !== release.hash)
+        throw new Error('Emacs archive SHA-256 mismatch; download discarded');
+    } else {
+      await downloadArchive(release.urls, archive, release.hash);
     }
-    if ((await hashFile(archive)) !== release.hash)
-      throw new Error('Emacs archive SHA-256 mismatch; download discarded');
     let extracted;
     if (windows) {
       extracted = path.join(staging, 'emacs');
