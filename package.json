@@ -29,7 +29,8 @@
     "test:core": "npm run compile && cucumber-js --require .build/test/steps/**/*.js test/features/**/*.feature && node .build/test/search-decorations.js && node .build/test/region-clipboard.js && node .build/test/goto-line-prompt.js && node .build/test/setup-emacs.js",
     "test:extension": "npm run compile && vscode-test --config .build/.vscode-test.mjs",
     "test:oracle": "npm run compile && node .build/scripts/run-oracles.js",
-    "test": "npm run test:core"
+    "test": "npm run test:core",
+    "test:all": "npm run test:core && npm run test:keybindings && npm run test:build-isolation && npm run test:oracle && npm run test:extension"
   },
   "contributes": {
     "configurationDefaults": {
