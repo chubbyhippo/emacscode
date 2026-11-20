@@ -1432,3 +1432,63 @@ Feature: Emacs editing state
     When I mark a word
     Then point is 5 and mark is 5
     And the region is active
+
+  @SC-comment-dwim-trailing @global-a8886433f140e8b4
+  Scenario: Comment dwim inserts a trailing comment on a code line
+    Given text "foo();" at position 0
+    When I comment or uncomment with token "//"
+    Then the text is "foo();\t\t\t\t//"
+    And point is 12
+
+  Scenario: Comment dwim jumps into an existing trailing comment
+    Given text "foo(); // note" at position 0
+    When I comment or uncomment with token "//"
+    Then point is 13
+
+  Scenario: Comment dwim on a blank line copies the previous line's indentation
+    Given text "    foo();\n" at position 11
+    When I comment or uncomment with token "//"
+    Then the text is "    foo();\n    // "
+    And point is 18
+
+  Scenario: Comment dwim without a known comment token reports an error
+    Given text "foo();" at position 0
+    When I try to comment or uncomment without a comment token
+    Then an error is reported
+    And the text is "foo();"
+
+  Scenario: Comment dwim comments every non-blank line of an active region at the common indentation
+    Given text "foo();\n    bar();" at position 0
+    When I set the mark and move forward 17 characters
+    And I comment or uncomment with token "//"
+    Then the text is "// foo();\n//     bar();"
+    And the region is inactive
+
+  Scenario: Comment dwim respects a reversed region ending at the next CRLF line
+    Given text "foo\r\nbar" at position 5
+    When I set the mark
+    And I move backward 4 character
+    And I comment or uncomment with token "//"
+    Then the text is "// foo\r\nbar"
+    And point is 0 and mark is 8
+    And the region is inactive
+
+  Scenario: Comment dwim uncomments an already-commented active region
+    Given text "// foo();\n// bar();" at position 0
+    When I set the mark and move forward 19 characters
+    And I comment or uncomment with token "//"
+    Then the text is "foo();\nbar();"
+    And the region is inactive
+
+  Scenario: Comment dwim skips blank lines inside a commented region
+    Given text "foo();\n\nbar();" at position 0
+    When I set the mark and move forward 14 characters
+    And I comment or uncomment with token "//"
+    Then the text is "// foo();\n\n// bar();"
+
+  Scenario: Comment dwim on an empty active region behaves like no region
+    Given text "foo();" at position 3
+    When I set the mark
+    And I comment or uncomment with token "//"
+    Then point is 12
+    And the region is inactive

@@ -20,6 +20,60 @@ import { SearchController } from './search';
 import { Registers } from './core/registers';
 import { editRectangle, RectangleAction, yankRectangle } from './core/rectangles';
 
+const lineCommentTokens: Record<string, string> = {
+  javascript: '//',
+  javascriptreact: '//',
+  typescript: '//',
+  typescriptreact: '//',
+  c: '//',
+  cpp: '//',
+  'objective-c': '//',
+  'objective-cpp': '//',
+  csharp: '//',
+  java: '//',
+  go: '//',
+  rust: '//',
+  php: '//',
+  swift: '//',
+  kotlin: '//',
+  scala: '//',
+  dart: '//',
+  groovy: '//',
+  jsonc: '//',
+  less: '//',
+  shaderlab: '//',
+  python: '#',
+  ruby: '#',
+  perl: '#',
+  shellscript: '#',
+  yaml: '#',
+  dockerfile: '#',
+  toml: '#',
+  r: '#',
+  powershell: '#',
+  makefile: '#',
+  coffeescript: '#',
+  tcl: '#',
+  nim: '#',
+  elixir: '#',
+  julia: '#',
+  lisp: ';',
+  clojure: ';',
+  scheme: ';',
+  racket: ';',
+  'emacs-lisp': ';',
+  asm: ';',
+  sql: '--',
+  haskell: '--',
+  lua: '--',
+  ada: '--',
+  vhdl: '--',
+  elm: '--',
+  vim: '"',
+  fortran: '!',
+  fortran90: '!',
+};
+
 type Action = (
   state: EditorState,
   count: number,
@@ -352,7 +406,6 @@ export function activate(context: vscode.ExtensionContext): void {
   for (const [name, action] of Object.entries(actions)) register(name, action);
   for (const [name, command, needsRegion] of [
     ['newlineIndent', 'type', false],
-    ['comment', 'editor.action.commentLine', false],
     ['indentRegion', 'editor.action.indentLines', true],
   ] as const) {
     context.subscriptions.push(
@@ -385,6 +438,36 @@ export function activate(context: vscode.ExtensionContext): void {
       }),
     );
   }
+  context.subscriptions.push(
+    vscode.commands.registerCommand('emacscode.comment', () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      prefix.reset();
+      void contextUpdate();
+      queue = queue
+        .then(async () => {
+          if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+            throw new Error('The original editor is no longer active');
+          if (editor.selections.length !== 1)
+            throw new Error('emacscode supports one cursor at a time');
+          const state = stateFor(editor);
+          state.breakCommandChain();
+          const before = state.text;
+          state.commentDwim(
+            lineCommentTokens[editor.document.languageId],
+            typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
+            editor.options?.insertSpaces !== false,
+          );
+          await apply(editor, state, before);
+        })
+        .catch((error) => {
+          void vscode.window.showWarningMessage(
+            `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      return queue;
+    }),
+  );
   for (const [name, command] of [
     ['navigateBack', 'workbench.action.navigateBack'],
     ['navigateForward', 'workbench.action.navigateForward'],

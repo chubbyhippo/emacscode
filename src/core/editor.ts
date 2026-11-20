@@ -33,6 +33,12 @@ export class FillParagraphError extends Error {}
 
 export class AbbreviationError extends Error {}
 
+export class CommentSyntaxError extends Error {
+  constructor() {
+    super('No comment syntax is defined');
+  }
+}
+
 export class ZapSearchError extends Error {
   constructor() {
     super('Character not found');
@@ -1657,5 +1663,187 @@ export class EditorState {
   public insert(value: string): void {
     this.replace(this.point, this.point, value);
     this.done('insert');
+  }
+  private lineRange(position: number): [number, number] {
+    const start = position === 0 ? 0 : this.text.lastIndexOf('\n', position - 1) + 1;
+    const newline = this.text.indexOf('\n', position);
+    let end = newline < 0 ? this.text.length : newline;
+    if (end > start && this.text[end - 1] === '\r') end--;
+    return [start, end];
+  }
+  private columnOf(lineStart: number, offset: number, tabSize: number): number {
+    let column = 0;
+    for (let index = lineStart; index < offset; index++)
+      column += this.text[index] === '\t' ? tabSize - (column % tabSize) : 1;
+    return column;
+  }
+  private padTo(
+    fromColumn: number,
+    toColumn: number,
+    tabSize: number,
+    insertSpaces: boolean,
+  ): string {
+    let column = fromColumn;
+    let value = '';
+    while (!insertSpaces && column + (tabSize - (column % tabSize)) <= toColumn) {
+      value += '\t';
+      column += tabSize - (column % tabSize);
+    }
+    value += ' '.repeat(Math.max(0, toColumn - column));
+    return value;
+  }
+  private previousIndentColumn(lineStart: number, tabSize: number): number {
+    let cursor = lineStart;
+    while (cursor > 0) {
+      const [start, end] = this.lineRange(cursor - 1);
+      if (!/^[ \t]*$/.test(this.text.slice(start, end))) {
+        let index = start;
+        while (index < end && (this.text[index] === ' ' || this.text[index] === '\t')) index++;
+        return this.columnOf(start, index, tabSize);
+      }
+      cursor = start;
+    }
+    return 0;
+  }
+  public commentDwim(
+    commentStart: string | undefined,
+    tabSize = 8,
+    insertSpaces = false,
+    commentColumn = 32,
+  ): void {
+    if (!commentStart) throw new CommentSyntaxError();
+    if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
+    if (this.active && this.mark !== undefined && this.mark !== this.point) {
+      this.commentRegion(commentStart, tabSize);
+      return;
+    }
+    const [lineStart, lineEnd] = this.lineRange(this.point);
+    const line = this.text.slice(lineStart, lineEnd);
+    if (/^[ \t]*$/.test(line)) {
+      const target = this.previousIndentColumn(lineStart, tabSize);
+      const indent = this.padTo(0, target, tabSize, insertSpaces);
+      const inserted = indent + commentStart + ' ';
+      this.replace(lineStart, lineEnd, inserted);
+      this.point = lineStart + inserted.length;
+      this.active = false;
+      this.done('comment');
+      return;
+    }
+    const index = line.indexOf(commentStart);
+    if (index >= 0) {
+      const tokenStart = lineStart + index;
+      let wsStart = tokenStart;
+      while (
+        wsStart > lineStart &&
+        (this.text[wsStart - 1] === ' ' || this.text[wsStart - 1] === '\t')
+      )
+        wsStart--;
+      const codeColumn = this.columnOf(lineStart, wsStart, tabSize);
+      let delta = 0;
+      if (wsStart !== lineStart) {
+        const desiredColumn = codeColumn < commentColumn ? commentColumn : codeColumn + 1;
+        const currentColumn = this.columnOf(lineStart, tokenStart, tabSize);
+        if (currentColumn !== desiredColumn) {
+          const padding = this.padTo(codeColumn, desiredColumn, tabSize, insertSpaces);
+          this.replace(wsStart, tokenStart, padding);
+          delta = padding.length - (tokenStart - wsStart);
+        }
+      } else {
+        const target = this.previousIndentColumn(lineStart, tabSize);
+        const currentColumn = this.columnOf(lineStart, tokenStart, tabSize);
+        if (target !== currentColumn) {
+          const indent = this.padTo(0, target, tabSize, insertSpaces);
+          this.replace(lineStart, tokenStart, indent);
+          delta = indent.length - (tokenStart - lineStart);
+        }
+      }
+      const newTokenStart = tokenStart + delta;
+      const newLineEnd = lineEnd + delta;
+      let after = newTokenStart + commentStart.length;
+      while (after < newLineEnd && (this.text[after] === ' ' || this.text[after] === '\t')) after++;
+      this.point = after;
+    } else {
+      const codeColumn = this.columnOf(lineStart, lineEnd, tabSize);
+      const desiredColumn = codeColumn < commentColumn ? commentColumn : codeColumn + 1;
+      const padding = this.padTo(codeColumn, desiredColumn, tabSize, insertSpaces);
+      this.replace(lineEnd, lineEnd, padding + commentStart);
+      this.point = lineEnd + padding.length + commentStart.length;
+    }
+    this.active = false;
+    this.done('comment');
+  }
+  private commentRegion(commentStart: string, tabSize: number): void {
+    const regionStart = Math.min(this.mark!, this.point);
+    const regionEnd = Math.max(this.mark!, this.point);
+    const reversed = this.point < this.mark!;
+    const [firstLineStart] = this.lineRange(regionStart);
+    const endsAtLineStart = regionEnd > 0 && this.text[regionEnd - 1] === '\n';
+    const [, lastLineEnd] = this.lineRange(endsAtLineStart ? regionEnd - 1 : regionEnd);
+    const lines: [number, number][] = [];
+    let cursor = firstLineStart;
+    for (;;) {
+      const [start, end] = this.lineRange(cursor);
+      lines.push([start, end]);
+      if (end >= lastLineEnd) break;
+      const newline = this.text.indexOf('\n', end);
+      if (newline < 0) break;
+      cursor = newline + 1;
+    }
+    const isBlank = ([start, end]: [number, number]): boolean =>
+      /^[ \t]*$/.test(this.text.slice(start, end));
+    const nonBlank = lines.filter((range) => !isBlank(range));
+    if (!nonBlank.length) throw new Error('Nothing to comment');
+    const alreadyCommented = nonBlank.every(([start, end]) =>
+      this.text
+        .slice(start, end)
+        .replace(/^[ \t]*/, '')
+        .startsWith(commentStart),
+    );
+    let delta = 0;
+    if (alreadyCommented) {
+      for (const [start, end] of nonBlank) {
+        const shiftedStart = start + delta;
+        const shiftedEnd = end + delta;
+        const content = this.text.slice(shiftedStart, shiftedEnd);
+        const leading = /^[ \t]*/.exec(content)![0].length;
+        const tokenStart = shiftedStart + leading;
+        let removeEnd = tokenStart + commentStart.length;
+        if (this.text[removeEnd] === ' ') removeEnd++;
+        this.replace(tokenStart, removeEnd, '');
+        delta -= removeEnd - tokenStart;
+      }
+    } else {
+      const minColumn = Math.min(
+        ...nonBlank.map(([start, end]) => {
+          const content = this.text.slice(start, end);
+          const leading = /^[ \t]*/.exec(content)![0].length;
+          return this.columnOf(start, start + leading, tabSize);
+        }),
+      );
+      for (const [start, end] of nonBlank) {
+        const shiftedStart = start + delta;
+        const shiftedEnd = end + delta;
+        let offset = shiftedStart;
+        let column = 0;
+        while (
+          offset < shiftedEnd &&
+          column < minColumn &&
+          (this.text[offset] === ' ' || this.text[offset] === '\t')
+        ) {
+          column += this.text[offset] === '\t' ? tabSize - (column % tabSize) : 1;
+          offset++;
+        }
+        const insertion = commentStart + ' ';
+        this.replace(offset, offset, insertion);
+        delta += insertion.length;
+      }
+    }
+    const endPoint = (endsAtLineStart ? regionEnd : lastLineEnd) + delta;
+    if (reversed) {
+      this.point = firstLineStart;
+      this.mark = endPoint;
+    } else this.point = endPoint;
+    this.active = false;
+    this.done('comment');
   }
 }

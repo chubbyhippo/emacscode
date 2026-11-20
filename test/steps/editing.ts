@@ -397,6 +397,20 @@ When('I tab to a stop of width {int} using {word}', function (size, style) {
     this.error = error;
   }
 });
+When('I comment or uncomment with token {string}', function (token) {
+  try {
+    this.state.commentDwim(token);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I try to comment or uncomment without a comment token', function () {
+  try {
+    this.state.commentDwim(undefined);
+  } catch (error) {
+    this.error = error;
+  }
+});
 Then('point is {int} and mark is {int}', function (point, mark) {
   assert.equal(this.state.point, point);
   assert.equal(this.state.mark, mark);

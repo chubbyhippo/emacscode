@@ -698,6 +698,27 @@ describe('emacscode editor behavior', function () {
     );
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given a reversed CRLF region When commenting Then only selected lines change and undo restores them', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'foo\nbar',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(1, 0);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit4');
+    await vscode.commands.executeCommand('emacscode.backwardChar');
+    await vscode.commands.executeCommand('emacscode.comment');
+    assert.equal(document.getText(), '// foo\r\nbar');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 0]);
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 0]);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'foo\r\nbar');
+  });
   it('Given newline and indentation adapters Then editing and undo remain functional', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha beta',

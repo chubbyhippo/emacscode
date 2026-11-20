@@ -56,6 +56,7 @@ const tests = [
   'kill-line-oracle.js',
   'region-oracle.js',
   'exchange-oracle.js',
+  'comment-dwim-oracle.js',
 ];
 
 async function main() {
