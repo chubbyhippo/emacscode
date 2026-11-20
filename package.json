@@ -79,6 +79,18 @@
         "title": "emacscode: setGoalColumn"
       },
       {
+        "command": "emacscode.textScaleReset",
+        "title": "emacscode: textScaleReset"
+      },
+      {
+        "command": "emacscode.textScaleIncrease",
+        "title": "emacscode: textScaleIncrease"
+      },
+      {
+        "command": "emacscode.textScaleDecrease",
+        "title": "emacscode: textScaleDecrease"
+      },
+      {
         "command": "emacscode.beginningOfLine",
         "title": "emacscode: beginningOfLine"
       },
@@ -527,6 +539,26 @@
       {
         "key": "ctrl+x ctrl+n",
         "command": "emacscode.setGoalColumn",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+0",
+        "command": "emacscode.textScaleReset",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+=",
+        "command": "emacscode.textScaleIncrease",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+shift+=",
+        "command": "emacscode.textScaleIncrease",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+x ctrl+-",
+        "command": "emacscode.textScaleDecrease",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

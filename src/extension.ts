@@ -492,6 +492,47 @@ export function activate(context: vscode.ExtensionContext): void {
       return queue;
     }),
   );
+  for (const [name, direction] of [
+    ['textScaleIncrease', 1],
+    ['textScaleDecrease', -1],
+    ['textScaleReset', 0],
+  ] as const) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`emacscode.${name}`, () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        const count = prefix.consume();
+        void contextUpdate();
+        queue = queue
+          .then(async () => {
+            if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+              throw new Error('The original editor is no longer active');
+            stateFor(editor).breakCommandChain();
+            recenterEditor = undefined;
+            windowLineEditor = undefined;
+            if (!Number.isSafeInteger(count) || Math.abs(count) > 100)
+              throw new Error('Text scale count is too large');
+            if (direction === 0 || count === 0) {
+              await vscode.commands.executeCommand('editor.action.fontZoomReset');
+              return;
+            }
+            const command =
+              count * direction > 0 ? 'editor.action.fontZoomIn' : 'editor.action.fontZoomOut';
+            for (let index = 0; index < Math.abs(count); index++) {
+              if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+                throw new Error('The original editor is no longer active');
+              await vscode.commands.executeCommand(command);
+            }
+          })
+          .catch((error) => {
+            void vscode.window.showWarningMessage(
+              `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        return queue;
+      }),
+    );
+  }
   for (const [name, command] of [
     ['navigateBack', 'workbench.action.navigateBack'],
     ['navigateForward', 'workbench.action.navigateForward'],

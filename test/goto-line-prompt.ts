@@ -22,6 +22,7 @@ class Range {
 async function main(): Promise<void> {
   const callbacks = new Map<string, (...args: any[]) => any>();
   const warnings: string[] = [];
+  const executed: string[] = [];
   const disposable = () => ({ dispose() {} });
   const document = {
     version: 1,
@@ -67,7 +68,9 @@ async function main(): Promise<void> {
         callbacks.set(name, callback);
         return disposable();
       },
-      executeCommand: async () => {},
+      executeCommand: async (command: string) => {
+        executed.push(command);
+      },
     },
   };
   const extensionPath = require.resolve('../../out/extension');
@@ -104,7 +107,44 @@ async function main(): Promise<void> {
   resolveInput('2');
   await pending;
   assert.equal(editor.selection.active.offset, 4);
-  console.log('Goto-line prompt cancellation and stale-state checks passed');
+  const call = async (name: string): Promise<void> => {
+    const callback = callbacks.get(`emacscode.${name}`);
+    assert.ok(callback, name);
+    await callback();
+  };
+  const zooms = (): string[] =>
+    executed.filter((command) => command.startsWith('editor.action.fontZoom'));
+  const initialSelection = editor.selection;
+  await call('textScaleIncrease');
+  await call('digit2');
+  await call('textScaleDecrease');
+  await call('negativeArgument');
+  await call('digit3');
+  await call('textScaleDecrease');
+  await call('digit0');
+  await call('textScaleIncrease');
+  await call('digit9');
+  await call('textScaleReset');
+  assert.deepEqual(zooms(), [
+    'editor.action.fontZoomIn',
+    'editor.action.fontZoomOut',
+    'editor.action.fontZoomOut',
+    'editor.action.fontZoomIn',
+    'editor.action.fontZoomIn',
+    'editor.action.fontZoomIn',
+    'editor.action.fontZoomReset',
+    'editor.action.fontZoomReset',
+  ]);
+  assert.ok(editor.selection.isEqual(initialSelection));
+  await call('digit1');
+  await call('digit0');
+  await call('digit1');
+  await call('textScaleIncrease');
+  assert.equal(zooms().length, 8);
+  assert.match(warnings.pop()!, /too large/);
+  await call('textScaleIncrease');
+  assert.equal(zooms().length, 9);
+  console.log('Goto-line prompt and text-scale command checks passed');
 }
 main().catch((error) => {
   console.error(error);

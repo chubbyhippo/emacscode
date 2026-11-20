@@ -45,6 +45,38 @@ describe('emacscode editor behavior', function () {
       await configuration.update('cursorStyle', previous, vscode.ConfigurationTarget.Global);
     }
   });
+  it('Given text scale commands Then zoom preserves text, mark and editor settings', async function () {
+    const commands = await vscode.commands.getCommands(true);
+    for (const command of [
+      'editor.action.fontZoomIn',
+      'editor.action.fontZoomOut',
+      'editor.action.fontZoomReset',
+    ])
+      assert.ok(commands.includes(command), command);
+    const configuration = vscode.workspace.getConfiguration('editor', editor.document.uri);
+    const fontSize = configuration.inspect('fontSize');
+    try {
+      await vscode.commands.executeCommand('emacscode.setMark');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      const selection = editor.selection;
+      await vscode.commands.executeCommand('emacscode.digit2');
+      await vscode.commands.executeCommand('emacscode.textScaleIncrease');
+      assert.ok(editor.selection.isEqual(selection));
+      await vscode.commands.executeCommand('emacscode.negativeArgument');
+      await vscode.commands.executeCommand('emacscode.textScaleDecrease');
+      await vscode.commands.executeCommand('emacscode.textScaleReset');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      assert.deepEqual(
+        [editor.selection.anchor.character, editor.selection.active.character],
+        [0, 2],
+      );
+      assert.equal(editor.document.getText(), 'alpha beta');
+      assert.deepEqual(configuration.inspect('fontSize'), fontSize);
+    } finally {
+      await vscode.commands.executeCommand('emacscode.textScaleReset');
+      await vscode.commands.executeCommand('emacscode.cancel');
+    }
+  });
   it('Given an editor When moving forward Then point advances', async function () {
     await vscode.commands.executeCommand('emacscode.forwardChar');
     assert.equal(editor.selection.active.character, 1);
