@@ -1424,6 +1424,25 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(), '\u2003\u00a0hello');
     await vscode.commands.executeCommand('emacscode.cancel');
   });
+  it('Given append-next-kill Then the next kill appends and can be yanked', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      await vscode.commands.executeCommand('emacscode.appendNextKill');
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(editor.document.getText(), ' ');
+      assert.equal(await vscode.env.clipboard.readText(), 'alphabeta');
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editor.document.getText(), ' alphabeta');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(editor.document.getText(), ' ');
+      await vscode.commands.executeCommand('undo');
+      assert.equal(editor.document.getText(), ' beta');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given a numeric prefix When killing a line Then it includes the newline and undo restores it', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha\nbeta',

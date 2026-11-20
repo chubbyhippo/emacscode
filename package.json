@@ -279,6 +279,10 @@
         "title": "emacscode: markWholeBuffer"
       },
       {
+        "command": "emacscode.appendNextKill",
+        "title": "emacscode: appendNextKill"
+      },
+      {
         "command": "emacscode.killRegion",
         "title": "emacscode: killRegion"
       },
@@ -793,6 +797,11 @@
       {
         "key": "ctrl+x h",
         "command": "emacscode.markWholeBuffer",
+        "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
+      },
+      {
+        "key": "ctrl+alt+w",
+        "command": "emacscode.appendNextKill",
         "when": "config.emacscode.enabled && editorTextFocus && !terminalFocus && !inQuickInput"
       },
       {

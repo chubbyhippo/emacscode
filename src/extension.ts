@@ -349,6 +349,7 @@ export function activate(context: vscode.ExtensionContext): void {
     markParagraph: (state, count) => state.markParagraph(count),
     exchangePointAndMark: (state, _count, hasPrefix) => state.exchange(hasPrefix),
     markWholeBuffer: (state) => state.selectAll(),
+    appendNextKill: (state) => state.appendNextKill(),
     killRegion: (state) => {
       state.region();
     },

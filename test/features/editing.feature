@@ -102,6 +102,49 @@ Feature: Emacs editing state
     Then the text is "alpha beta"
     And point is 10
 
+  @SC-append-next-kill
+  Scenario: Append a nonconsecutive kill to the previous kill ring entry
+    Given text "alpha beta" at position 0
+    When I add an older kill "old"
+    And I append the next kill
+    And I kill the next word
+    Then the text is " beta"
+    And the newest kill is "oldalpha"
+    When I yank
+    Then the text is "oldalpha beta"
+
+  @SC-append-next-kill-backward
+  Scenario: Append-next-kill prepends a backward kill
+    Given text "alpha beta" at position 10
+    When I add an older kill "old"
+    And I append the next kill
+    And I kill the previous word
+    Then the text is "alpha "
+    And the newest kill is "betaold"
+    And point is 6
+
+  @SC-append-next-kill-copy
+  Scenario: Append-next-kill combines a copied region without deleting it
+    Given text "alpha beta" at position 0
+    When I set the mark and move forward 5 characters
+    And I add an older kill "old"
+    And I append the next kill
+    And I try to copy the region
+    Then the text is "alpha beta"
+    And the newest kill is "oldalpha"
+    And point is 5 and mark is 0
+    And the region is inactive
+
+  @SC-append-next-kill-interrupted
+  Scenario: Movement cancels append-next-kill before a later kill
+    Given text "alpha beta" at position 0
+    When I add an older kill "old"
+    And I append the next kill
+    And I move forward 1 character
+    And I kill the next word
+    Then the text is "a beta"
+    And the kill ring contains "lpha" then "old"
+
   Scenario: Yank pop requires a previous yank
     Given text "alpha" at position 0
     When I try yank pop

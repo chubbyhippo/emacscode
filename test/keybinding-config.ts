@@ -9,6 +9,7 @@ const editorContext =
 for (const [key, command] of [
   ['ctrl+b', 'emacscode.backwardChar'],
   ['ctrl+f', 'emacscode.forwardChar'],
+  ['ctrl+alt+w', 'emacscode.appendNextKill'],
   ['ctrl+x r s', 'emacscode.copyToRegister'],
   ['ctrl+x r x', 'emacscode.copyToRegister'],
   ['ctrl+x r shift+=', 'emacscode.incrementRegister'],

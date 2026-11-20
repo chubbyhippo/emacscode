@@ -63,6 +63,7 @@ const bindings = [
   ['alt+h', 'markParagraph'],
   ['ctrl+x ctrl+x', 'exchangePointAndMark'],
   ['ctrl+x h', 'markWholeBuffer'],
+  ['ctrl+alt+w', 'appendNextKill'],
   ['ctrl+w', 'killRegion'],
   ['alt+w', 'copyRegion'],
   ['ctrl+k', 'killLine'],

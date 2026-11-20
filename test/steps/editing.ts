@@ -51,6 +51,9 @@ When('I try to {word} the region', function (operation) {
     this.error = error;
   }
 });
+When('I append the next kill', function () {
+  this.state.appendNextKill();
+});
 When('I kill the next word twice', function () {
   this.state.killWord(1);
   this.state.killWord(1);
@@ -323,6 +326,9 @@ When('I mark a word', function () {
 });
 When('I mark words with prefix {int}', function (count) {
   this.state.markWord(count, true);
+});
+When('I kill the previous word', function () {
+  this.state.killWord(-1);
 });
 When('I kill the previous word twice', function () {
   this.state.killWord(-1);

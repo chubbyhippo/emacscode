@@ -208,6 +208,9 @@ export class EditorState {
   public breakCommandChain(): void {
     this.done('other');
   }
+  public appendNextKill(): void {
+    this.done('append-next-kill');
+  }
   public exchange(hasPrefix = false): void {
     if (this.mark === undefined) throw new Error('No mark set');
     const point = this.point;
@@ -828,7 +831,11 @@ export class EditorState {
     end = this.clamp(end);
     if (start > end) [start, end] = [end, start];
     const value = this.text.slice(start, end);
-    this.ring.add(value, direction, this.previous === 'kill' && !copy);
+    this.ring.add(
+      value,
+      direction,
+      this.previous === 'append-next-kill' || (this.previous === 'kill' && !copy),
+    );
     if (!copy && value) this.replace(start, end, '');
     this.active = false;
     this.done(copy ? 'copy' : 'kill');

@@ -54,6 +54,7 @@ const tests = [
   'indentation-unicode-oracle.js',
   'mark-word-oracle.js',
   'kill-line-oracle.js',
+  'append-next-kill-oracle.js',
   'region-oracle.js',
   'exchange-oracle.js',
   'comment-dwim-oracle.js',
