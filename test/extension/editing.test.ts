@@ -719,6 +719,74 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'foo\r\nbar');
   });
+  it('Given a numeric comment prefix Then the next line and kill ring follow the edit', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: '// note\nnext',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.digit1');
+    await vscode.commands.executeCommand('emacscode.comment');
+    assert.equal(document.getText(), '\nnext');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 0]);
+    await vscode.commands.executeCommand('emacscode.yank');
+    assert.equal(document.getText(), '\n// notenext');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), '\nnext');
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), '// note\nnext');
+  });
+  it('Given a comment prefix Then the kill reaches the clipboard and undo restores text', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: '// note\nnext',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.universalArgument');
+      await vscode.commands.executeCommand('emacscode.comment');
+      assert.equal(document.getText(), '\nnext');
+      assert.equal(await vscode.env.clipboard.readText(), '// note');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 0]);
+      await vscode.commands.executeCommand('undo');
+      assert.equal(document.getText(), '// note\nnext');
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
+  it('Given a read-only comment Then a rejected kill preserves the clipboard and ring', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    const provider = vscode.workspace.registerTextDocumentContentProvider(
+      'emacscode-comment-readonly',
+      {
+        provideTextDocumentContent: () => '// protected',
+      },
+    );
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      const document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('emacscode-comment-readonly:/protected.js'),
+      );
+      await vscode.languages.setTextDocumentLanguage(document, 'javascript');
+      editor = await vscode.window.showTextDocument(document);
+      await vscode.commands.executeCommand('emacscode.universalArgument');
+      await vscode.commands.executeCommand('emacscode.comment');
+      assert.equal(document.getText(), '// protected');
+      assert.equal(await vscode.env.clipboard.readText(), 'alpha');
+      const editable = await vscode.workspace.openTextDocument({
+        content: '',
+        language: 'plaintext',
+      });
+      editor = await vscode.window.showTextDocument(editable);
+      await vscode.commands.executeCommand('emacscode.yank');
+      assert.equal(editable.getText(), 'alpha');
+    } finally {
+      provider.dispose();
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given newline and indentation adapters Then editing and undo remain functional', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha beta',

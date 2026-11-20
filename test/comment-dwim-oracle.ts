@@ -58,6 +58,31 @@ for (const expected of results.region) {
     total++;
   }
 }
-console.log(
-  `${total} comment-dwim sequences matched GNU Emacs 31.1 (point and region); CRLF equivalents checked`,
-);
+for (const expected of results.prefix) {
+  for (const crlf of [false, true]) {
+    const convert = (value: string) => value.replace(/\n/g, crlf ? '\r\n' : '\n');
+    const ring = new KillRing();
+    const state = new EditorState(
+      convert(expected.input),
+      convert(expected.input.slice(0, expected.start)).length,
+      ring,
+    );
+    const raw = expected.keys.startsWith('C-u');
+    const count = raw
+      ? 4
+      : Number((expected.keys.startsWith('M--') ? '-' : '') + expected.keys.match(/M-(\d)/)?.[1]);
+    const context = JSON.stringify({ ...expected, crlf });
+    if (expected.error) {
+      assert.throws(() => state.commentDwim('//', 8, false, 32, count, raw), context);
+      assert.equal(state.text, convert(expected.input), context);
+      total++;
+      continue;
+    }
+    state.commentDwim('//', 8, false, 32, count, raw);
+    assert.equal(state.text, convert(expected.text), context);
+    assert.equal(state.point, convert(expected.text.slice(0, expected.point)).length, context);
+    assert.deepEqual(ring.values(), expected.ring.map(convert), context);
+    total++;
+  }
+}
+console.log(`${total} comment-dwim sequences matched GNU Emacs 31.1; CRLF equivalents checked`);

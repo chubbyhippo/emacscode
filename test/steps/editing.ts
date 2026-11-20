@@ -404,6 +404,20 @@ When('I comment or uncomment with token {string}', function (token) {
     this.error = error;
   }
 });
+When('I comment with token {string} and prefix {int}', function (token, count) {
+  try {
+    this.state.commentDwim(token, 8, false, 32, count, false);
+  } catch (error) {
+    this.error = error;
+  }
+});
+When('I comment with token {string} and a universal prefix', function (token) {
+  try {
+    this.state.commentDwim(token, 8, false, 32, 4, true);
+  } catch (error) {
+    this.error = error;
+  }
+});
 When('I try to comment or uncomment without a comment token', function () {
   try {
     this.state.commentDwim(undefined);

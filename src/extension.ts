@@ -442,7 +442,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('emacscode.comment', () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) return;
-      prefix.reset();
+      const hasPrefix = prefix.pending;
+      const rawUniversal = prefix.rawUniversal;
+      const count = prefix.consume();
       void contextUpdate();
       queue = queue
         .then(async () => {
@@ -453,12 +455,38 @@ export function activate(context: vscode.ExtensionContext): void {
           const state = stateFor(editor);
           state.breakCommandChain();
           const before = state.text;
-          state.commentDwim(
-            lineCommentTokens[editor.document.languageId],
-            typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
-            editor.options?.insertSpaces !== false,
-          );
-          await apply(editor, state, before);
+          const snapshot = ring.snapshot();
+          let committed = false;
+          try {
+            state.commentDwim(
+              lineCommentTokens[editor.document.languageId],
+              typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
+              editor.options?.insertSpaces !== false,
+              32,
+              hasPrefix ? count : undefined,
+              rawUniversal,
+            );
+            await apply(editor, state, before, () => {
+              committed = true;
+            });
+            const newest = ring.values()[0];
+            if (
+              newest !== undefined &&
+              (newest !== snapshot.entries[0] || ring.values().length !== snapshot.entries.length)
+            ) {
+              try {
+                await vscode.env.clipboard.writeText(newest);
+              } catch {
+                void vscode.window.showWarningMessage(
+                  'emacscode: could not update the system clipboard',
+                );
+              }
+            }
+          } catch (error) {
+            if (!committed) ring.restore(snapshot.entries, snapshot.index);
+            if (state.text !== before) states.delete(editor);
+            throw error;
+          }
         })
         .catch((error) => {
           void vscode.window.showWarningMessage(

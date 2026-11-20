@@ -1486,6 +1486,32 @@ Feature: Emacs editing state
     And I comment or uncomment with token "//"
     Then the text is "// foo();\n\n// bar();"
 
+  @SC-comment-prefix-universal
+  Scenario: A universal prefix kills the first comment on the current line
+    Given text "// note\r\nnext" at position 3
+    When I comment with token "//" and a universal prefix
+    Then the text is "\r\nnext"
+    And the newest kill is "// note"
+    And point is 0
+
+  @SC-comment-prefix-count
+  Scenario: A numeric prefix processes successive lines and preserves their separate kills
+    Given text "one // a\r\ntwo // b" at position 0
+    When I comment with token "//" and prefix 2
+    Then the text is "one// a\r\ntwo// b"
+    And the kill ring contains " " then " "
+    And point is 16
+
+  @SC-comment-prefix-region-safety
+  Scenario: A prefixed active region is rejected without modifying text or the mark
+    Given text "foo\nbar" at position 0
+    When I set the mark and move forward 3 characters
+    And I comment with token "//" and prefix 2
+    Then an error is reported
+    And the text is "foo\nbar"
+    And point is 3 and mark is 0
+    And the region is active
+
   Scenario: Comment dwim on an empty active region behaves like no region
     Given text "foo();" at position 3
     When I set the mark

@@ -1710,10 +1710,14 @@ export class EditorState {
     tabSize = 8,
     insertSpaces = false,
     commentColumn = 32,
+    prefix?: number,
+    rawUniversal = false,
   ): void {
     if (!commentStart) throw new CommentSyntaxError();
     if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
+    if (prefix !== undefined && !Number.isSafeInteger(prefix)) throw new Error('Invalid prefix');
     if (this.active && this.mark !== undefined && this.mark !== this.point) {
+      if (prefix !== undefined) throw new Error('Prefixed region comments are not supported');
       this.commentRegion(commentStart, tabSize);
       return;
     }
@@ -1722,10 +1726,38 @@ export class EditorState {
     if (/^[ \t]*$/.test(line)) {
       const target = this.previousIndentColumn(lineStart, tabSize);
       const indent = this.padTo(0, target, tabSize, insertSpaces);
-      const inserted = indent + commentStart + ' ';
+      if (prefix !== undefined && prefix <= 0) throw new Error('Invalid comment prefix');
+      const inserted =
+        indent + commentStart + commentStart.slice(-1).repeat((prefix ?? 1) - 1) + ' ';
       this.replace(lineStart, lineEnd, inserted);
       this.point = lineStart + inserted.length;
       this.active = false;
+      this.done('comment');
+      return;
+    }
+    if (prefix !== undefined) {
+      const iterations = rawUniversal ? 1 : Math.min(Math.max(0, prefix), this.text.length + 1);
+      for (let iteration = 0; iteration < iterations; iteration++) {
+        const origin = this.point;
+        const [start, end] = this.lineRange(origin);
+        const index = this.text.slice(start, end).indexOf(commentStart);
+        if (index >= 0) {
+          let from = start + index;
+          while (from > 0 && /[ \t\r\n]/.test(this.text[from - 1])) from--;
+          const to = from < start || (from === 0 && index === 0) ? end : start + index;
+          const value = this.text.slice(from, to);
+          this.ring.add(value, 'forward', false);
+          if (from !== to) {
+            this.replace(from, to, '');
+            this.point = origin <= from ? origin : origin <= to ? from : origin - (to - from);
+            this.active = false;
+          }
+        }
+        if (!rawUniversal) {
+          const next = this.text.indexOf('\n', this.point);
+          this.point = next < 0 ? this.text.length : next + 1;
+        }
+      }
       this.done('comment');
       return;
     }
