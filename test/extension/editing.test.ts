@@ -755,6 +755,27 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'foo\r\nbar');
   });
+  it('Given a region inside a template literal Then commenting preserves its text and selection', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'const s = `\n// value\n`;',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    const position = new vscode.Position(1, 0);
+    editor.selection = new vscode.Selection(position, position);
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit8');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.digit1');
+    await vscode.commands.executeCommand('emacscode.comment');
+    assert.equal(document.getText(), 'const s = `\r\n// value\r\n`;');
+    assert.deepEqual([editor.selection.anchor.line, editor.selection.anchor.character], [1, 0]);
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [1, 8]);
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [2, 0]);
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given ambiguous comment syntax Then a prefix leaves the document unchanged', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: "ok // first\nconst value = 'text // preserved'",

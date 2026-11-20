@@ -1522,6 +1522,29 @@ Feature: Emacs editing state
     And point is 0 and mark is 0
     And the region is active
 
+  @SC-comment-region-template-safety
+  Scenario: Commenting a region inside a template string is rejected atomically
+    Given text "const s = `\r\n// value\r\n`;" at position 13
+    When I set the mark and move forward 8 characters
+    And I add an older kill "older"
+    And I comment with token "//" and prefix 1
+    Then an error is reported
+    And the text is "const s = `\r\n// value\r\n`;"
+    And point is 21 and mark is 13
+    And the region is active
+    And the newest kill is "older"
+
+  @SC-comment-region-block-safety
+  Scenario: A reversed region inside a block comment is preserved
+    Given text "/*\n// value\n*/" at position 11
+    When I set the mark
+    And I move backward 8 character
+    And I comment or uncomment with token "//"
+    Then an error is reported
+    And the text is "/*\n// value\n*/"
+    And point is 3 and mark is 11
+    And the region is active
+
   @SC-comment-prefix-region-one
   Scenario: A prefix of one comments a reversed CRLF region and preserves the mark
     Given text "foo\r\nbar" at position 8

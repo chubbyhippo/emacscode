@@ -1863,6 +1863,10 @@ export class EditorState {
       /^[ \t]*$/.test(this.text.slice(start, end));
     const nonBlank = lines.filter((range) => !isBlank(range));
     if (!nonBlank.length) throw new Error('Nothing to comment');
+    const lastStart = nonBlank[nonBlank.length - 1][0];
+    const prior = this.text.slice(0, lastStart);
+    if (/["'`\\]/.test(prior) || (commentStart === '//' && prior.includes('/*')))
+      throw new Error('Cannot comment a region after ambiguous syntax');
     const alreadyCommented = nonBlank.every(([start, end]) =>
       this.text
         .slice(start, end)
