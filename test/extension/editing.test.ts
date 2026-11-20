@@ -1830,6 +1830,48 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  for (const query of ['', 'beta', 'missing']) {
+    it(`Given an interrupted append When cancelling search for ${JSON.stringify(query)} Then the next kill starts a new entry`, async function () {
+      const clipboard = await vscode.env.clipboard.readText();
+      try {
+        await vscode.commands.executeCommand('emacscode.killWord');
+        await vscode.commands.executeCommand('emacscode.forwardChar');
+        await vscode.commands.executeCommand('emacscode.appendNextKill');
+        await vscode.commands.executeCommand('emacscode.digit2');
+        await vscode.commands.executeCommand('emacscode.searchForward', query);
+        await vscode.commands.executeCommand('emacscode.isearchCancel');
+        await vscode.commands.executeCommand('emacscode.isearchCancel');
+        await vscode.commands.executeCommand('emacscode.killWord');
+        assert.equal(editor.document.getText(), ' ');
+        assert.equal(await vscode.env.clipboard.readText(), 'beta');
+        await vscode.commands.executeCommand('emacscode.yank');
+        await vscode.commands.executeCommand('emacscode.yankPop');
+        assert.equal(editor.document.getText(), ' alpha');
+      } finally {
+        await vscode.commands.executeCommand('emacscode.isearchCancel');
+        await vscode.env.clipboard.writeText(clipboard);
+      }
+    });
+  }
+  it('Given a queued append When search immediately follows Then cancellation interrupts the append', async function () {
+    const clipboard = await vscode.env.clipboard.readText();
+    try {
+      await vscode.commands.executeCommand('emacscode.killWord');
+      await vscode.commands.executeCommand('emacscode.forwardChar');
+      const append = vscode.commands.executeCommand('emacscode.appendNextKill');
+      const search = vscode.commands.executeCommand('emacscode.searchForward', 'beta');
+      await Promise.all([append, search]);
+      await vscode.commands.executeCommand('emacscode.isearchCancel');
+      await vscode.commands.executeCommand('emacscode.killWord');
+      assert.equal(await vscode.env.clipboard.readText(), 'beta');
+      await vscode.commands.executeCommand('emacscode.yank');
+      await vscode.commands.executeCommand('emacscode.yankPop');
+      assert.equal(editor.document.getText(), ' alpha');
+    } finally {
+      await vscode.commands.executeCommand('emacscode.isearchCancel');
+      await vscode.env.clipboard.writeText(clipboard);
+    }
+  });
   it('Given incremental search When repeating and cancelling Then point returns to its origin', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'one two one',

@@ -1025,11 +1025,22 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
       vscode.commands.registerCommand(`emacscode.${name}`, (initialQuery?: string) => {
         const editor = vscode.window.activeTextEditor;
-        if (editor) {
-          prefix.reset();
-          void contextUpdate();
-          search.start(editor, direction, initialQuery);
-        }
+        if (!editor) return;
+        prefix.reset();
+        void contextUpdate();
+        queue = queue
+          .then(() => {
+            if (vscode.window.activeTextEditor !== editor || editor.document.isClosed)
+              throw new Error('The original editor is no longer active');
+            stateFor(editor).breakCommandChain();
+            search.start(editor, direction, initialQuery);
+          })
+          .catch((error) => {
+            void vscode.window.showWarningMessage(
+              `emacscode: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        return queue;
       }),
     );
   }
