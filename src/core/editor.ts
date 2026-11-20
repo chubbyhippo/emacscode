@@ -61,8 +61,10 @@ export class CharacterDeletionRangeError extends Error {
 export class KillRing {
   private entries: string[] = [];
   private index = 0;
+  private revision = 0;
   constructor(private readonly capacity = 60) {}
   public add(value: string, direction: Direction, append: boolean): void {
+    this.revision++;
     if (append && this.entries.length) {
       this.entries[0] = direction === 'forward' ? this.entries[0] + value : value + this.entries[0];
     } else {
@@ -82,6 +84,9 @@ export class KillRing {
   }
   public values(): readonly string[] {
     return this.entries.slice();
+  }
+  public get version(): number {
+    return this.revision;
   }
   public snapshot(): { entries: readonly string[]; index: number } {
     return { entries: this.values(), index: this.index };
@@ -1712,30 +1717,60 @@ export class EditorState {
     commentColumn = 32,
     prefix?: number,
     rawUniversal = false,
-  ): void {
+  ): boolean {
     if (!commentStart) throw new CommentSyntaxError();
     if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
     if (prefix !== undefined && !Number.isSafeInteger(prefix)) throw new Error('Invalid prefix');
     if (this.active && this.mark !== undefined && this.mark !== this.point) {
       if (prefix !== undefined) throw new Error('Prefixed region comments are not supported');
       this.commentRegion(commentStart, tabSize);
-      return;
+      return false;
     }
     const [lineStart, lineEnd] = this.lineRange(this.point);
     const line = this.text.slice(lineStart, lineEnd);
     if (/^[ \t]*$/.test(line)) {
       const target = this.previousIndentColumn(lineStart, tabSize);
       const indent = this.padTo(0, target, tabSize, insertSpaces);
-      if (prefix !== undefined && prefix <= 0) throw new Error('Invalid comment prefix');
+      if (prefix !== undefined && (prefix <= 0 || prefix > 100000))
+        throw new Error('Invalid comment prefix');
       const inserted =
         indent + commentStart + commentStart.slice(-1).repeat((prefix ?? 1) - 1) + ' ';
       this.replace(lineStart, lineEnd, inserted);
       this.point = lineStart + inserted.length;
       this.active = false;
       this.done('comment');
-      return;
+      return false;
+    }
+    if (prefix === undefined || rawUniversal || prefix > 0) {
+      if (!rawUniversal && prefix !== undefined && prefix > 100000)
+        throw new Error('Comment prefix is too large');
+      let scan = lineStart;
+      let ambiguous = /["'`\\]/.test(this.text.slice(0, scan));
+      let blockAmbiguous = commentStart === '//' && this.text.slice(0, scan).includes('/*');
+      const count = prefix === undefined || rawUniversal ? 1 : prefix;
+      for (let iteration = 0; iteration < count; iteration++) {
+        const [, end] = this.lineRange(scan);
+        const candidate = this.text.slice(scan, end);
+        const token = candidate.indexOf(commentStart);
+        const beforeToken = candidate.slice(0, token < 0 ? candidate.length : token);
+        if (
+          token >= 0 &&
+          (ambiguous ||
+            blockAmbiguous ||
+            /["'`\\]/.test(beforeToken) ||
+            (commentStart === '//' && beforeToken.includes('/*')))
+        )
+          throw new Error('Cannot identify a comment after ambiguous syntax');
+        ambiguous ||= /["'`\\]/.test(candidate);
+        blockAmbiguous ||= commentStart === '//' && candidate.includes('/*');
+        const next = this.text.indexOf('\n', end);
+        if (next < 0 || next + 1 === this.text.length) break;
+        scan = next + 1;
+      }
     }
     if (prefix !== undefined) {
+      if (!rawUniversal && prefix > 100000) throw new Error('Comment prefix is too large');
+      let killed = false;
       const iterations = rawUniversal ? 1 : Math.min(Math.max(0, prefix), this.text.length + 1);
       for (let iteration = 0; iteration < iterations; iteration++) {
         const origin = this.point;
@@ -1747,6 +1782,7 @@ export class EditorState {
           const to = from < start || (from === 0 && index === 0) ? end : start + index;
           const value = this.text.slice(from, to);
           this.ring.add(value, 'forward', false);
+          killed = true;
           if (from !== to) {
             this.replace(from, to, '');
             this.point = origin <= from ? origin : origin <= to ? from : origin - (to - from);
@@ -1759,7 +1795,7 @@ export class EditorState {
         }
       }
       this.done('comment');
-      return;
+      return killed;
     }
     const index = line.indexOf(commentStart);
     if (index >= 0) {
@@ -1803,6 +1839,7 @@ export class EditorState {
     }
     this.active = false;
     this.done('comment');
+    return false;
   }
   private commentRegion(commentStart: string, tabSize: number): void {
     const regionStart = Math.min(this.mark!, this.point);

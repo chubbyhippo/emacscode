@@ -81,8 +81,16 @@ for (const expected of results.prefix) {
     state.commentDwim('//', 8, false, 32, count, raw);
     assert.equal(state.text, convert(expected.text), context);
     assert.equal(state.point, convert(expected.text.slice(0, expected.point)).length, context);
+    assert.equal(
+      state.mark,
+      expected.mark === null ? undefined : convert(expected.text.slice(0, expected.mark)).length,
+      context,
+    );
+    assert.equal(state.active, expected.active, context);
     assert.deepEqual(ring.values(), expected.ring.map(convert), context);
     total++;
   }
 }
-console.log(`${total} comment-dwim sequences matched GNU Emacs 31.1; CRLF equivalents checked`);
+console.log(
+  `${total} comment-dwim comparisons checked against GNU Emacs 31.1 and CRLF equivalents; invalid-prefix edits are atomic`,
+);

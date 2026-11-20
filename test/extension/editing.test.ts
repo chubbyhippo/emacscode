@@ -719,6 +719,19 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'foo\r\nbar');
   });
+  it('Given ambiguous comment syntax Then a prefix leaves the document unchanged', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: "ok // first\nconst value = 'text // preserved'",
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.comment');
+    assert.equal(document.getText(), "ok // first\nconst value = 'text // preserved'");
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 0]);
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.equal(editor.selection.active.character, 1);
+  });
   it('Given a numeric comment prefix Then the next line and kill ring follow the edit', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: '// note\nnext',
@@ -735,6 +748,27 @@ describe('emacscode editor behavior', function () {
     assert.equal(document.getText(), '\nnext');
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), '// note\nnext');
+  });
+  it('Given repeated identical comment kills Then the clipboard is updated each time', async function () {
+    const configuration = vscode.workspace.getConfiguration('emacscode');
+    const clipboard = await vscode.env.clipboard.readText();
+    const document = await vscode.workspace.openTextDocument({
+      content: 'code;// note',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    this.timeout(120000);
+    try {
+      for (let index = 0; index < configuration.get('killRingSize', 60) + 1; index++) {
+        await vscode.env.clipboard.writeText('sentinel');
+        await vscode.commands.executeCommand('emacscode.universalArgument');
+        await vscode.commands.executeCommand('emacscode.comment');
+        assert.equal(document.getText(), 'code;// note');
+        assert.equal(await vscode.env.clipboard.readText(), '');
+      }
+    } finally {
+      await vscode.env.clipboard.writeText(clipboard);
+    }
   });
   it('Given a comment prefix Then the kill reaches the clipboard and undo restores text', async function () {
     const document = await vscode.workspace.openTextDocument({

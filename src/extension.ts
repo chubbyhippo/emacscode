@@ -234,7 +234,7 @@ export function activate(context: vscode.ExtensionContext): void {
             windowLineEditor = undefined;
             const before = state.text;
             const ringSnapshot = ring.snapshot();
-            const oldRing = ringSnapshot.entries;
+            const ringVersion = ring.version;
             let editCommitted = false;
             try {
               action(
@@ -252,10 +252,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 editCommitted = true;
               });
               const newest = ring.values()[0];
-              if (
-                newest !== undefined &&
-                (newest !== oldRing[0] || ring.values().length !== oldRing.length)
-              ) {
+              if (newest !== undefined && ring.version !== ringVersion) {
                 try {
                   await vscode.env.clipboard.writeText(newest);
                 } catch {
@@ -458,7 +455,7 @@ export function activate(context: vscode.ExtensionContext): void {
           const snapshot = ring.snapshot();
           let committed = false;
           try {
-            state.commentDwim(
+            const killed = state.commentDwim(
               lineCommentTokens[editor.document.languageId],
               typeof editor.options?.tabSize === 'number' ? editor.options.tabSize : 8,
               editor.options?.insertSpaces !== false,
@@ -470,10 +467,7 @@ export function activate(context: vscode.ExtensionContext): void {
               committed = true;
             });
             const newest = ring.values()[0];
-            if (
-              newest !== undefined &&
-              (newest !== snapshot.entries[0] || ring.values().length !== snapshot.entries.length)
-            ) {
+            if (killed && newest !== undefined) {
               try {
                 await vscode.env.clipboard.writeText(newest);
               } catch {
@@ -881,7 +875,7 @@ export function activate(context: vscode.ExtensionContext): void {
           const state = stateFor(editor);
           const before = state.text;
           const ringSnapshot = ring.snapshot();
-          const oldRing = ringSnapshot.entries;
+          const ringVersion = ring.version;
           let editCommitted = false;
           try {
             state.zapToChar(character, count);
@@ -889,10 +883,7 @@ export function activate(context: vscode.ExtensionContext): void {
               editCommitted = true;
             });
             const newest = ring.values()[0];
-            if (
-              newest !== undefined &&
-              (newest !== oldRing[0] || ring.values().length !== oldRing.length)
-            ) {
+            if (newest !== undefined && ring.version !== ringVersion) {
               try {
                 await vscode.env.clipboard.writeText(newest);
               } catch {

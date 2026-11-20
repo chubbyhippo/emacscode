@@ -1502,6 +1502,26 @@ Feature: Emacs editing state
     And the kill ring contains " " then " "
     And point is 16
 
+  @SC-comment-prefix-quoted-safety
+  Scenario: A prefixed comment operation rejects ambiguous quoted content atomically
+    Given text "ok // comment\nconst x = 'value // unchanged'" at position 0
+    When I add an older kill "older"
+    And I comment with token "//" and prefix 2
+    Then an error is reported
+    And the text is "ok // comment\nconst x = 'value // unchanged'"
+    And the newest kill is "older"
+    And point is 0
+
+  @SC-comment-prefix-limit
+  Scenario: An excessive prefix is rejected before inserting a comment
+    Given text "   " at position 0
+    When I set the mark
+    And I comment with token "//" and prefix 100001
+    Then an error is reported
+    And the text is "   "
+    And point is 0 and mark is 0
+    And the region is active
+
   @SC-comment-prefix-region-safety
   Scenario: A prefixed active region is rejected without modifying text or the mark
     Given text "foo\nbar" at position 0
