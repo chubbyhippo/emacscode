@@ -719,6 +719,42 @@ describe('emacscode editor behavior', function () {
     await vscode.commands.executeCommand('undo');
     assert.equal(document.getText(), 'foo\r\nbar');
   });
+  it('Given an active region and prefix one When commenting Then undo restores CRLF text', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'foo\nbar',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit7');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.digit1');
+    await vscode.commands.executeCommand('emacscode.comment');
+    assert.equal(document.getText(), '// foo\r\n// bar');
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('emacscode.exchangePointAndMark');
+    assert.deepEqual([editor.selection.active.line, editor.selection.active.character], [0, 0]);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'foo\r\nbar');
+  });
+  it('Given an active region and prefix two When commenting Then undo restores both lines', async function () {
+    const document = await vscode.workspace.openTextDocument({
+      content: 'foo\nbar',
+      language: 'javascript',
+    });
+    editor = await vscode.window.showTextDocument(document);
+    await editor.edit((builder) => builder.setEndOfLine(vscode.EndOfLine.CRLF));
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.digit7');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.comment');
+    assert.equal(document.getText(), '/// foo\r\n/// bar');
+    assert.ok(editor.selection.isEmpty);
+    await vscode.commands.executeCommand('undo');
+    assert.equal(document.getText(), 'foo\r\nbar');
+  });
   it('Given ambiguous comment syntax Then a prefix leaves the document unchanged', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: "ok // first\nconst value = 'text // preserved'",

@@ -58,6 +58,31 @@ for (const expected of results.region) {
     total++;
   }
 }
+for (const expected of results['region-prefix'].filter((result) =>
+  ['M-1 M-;', 'M-2 M-;'].includes(result.keys),
+)) {
+  for (const crlf of [false, true]) {
+    const convert = (value: string) => value.replace(/\n/g, crlf ? '\r\n' : '\n');
+    const ring = new KillRing();
+    ring.add('sentinel', 'forward', false);
+    const state = new EditorState(
+      convert(expected.input),
+      convert(expected.input.slice(0, expected['point-arg'])).length,
+      ring,
+    );
+    state.mark = convert(expected.input.slice(0, expected.mark)).length;
+    state.active = true;
+    const context = JSON.stringify({ ...expected, crlf });
+    state.commentDwim('//', 8, false, 32, expected.keys === 'M-1 M-;' ? 1 : 2);
+    assert.equal(expected.error, null, context);
+    assert.equal(state.text, convert(expected.text), context);
+    assert.equal(state.point, convert(expected.text.slice(0, expected.point)).length, context);
+    assert.equal(state.mark, convert(expected.text.slice(0, expected.mark2)).length, context);
+    assert.equal(state.active, expected.active, context);
+    assert.deepEqual(ring.values(), ['sentinel'], context);
+    total++;
+  }
+}
 for (const expected of results.prefix) {
   for (const crlf of [false, true]) {
     const convert = (value: string) => value.replace(/\n/g, crlf ? '\r\n' : '\n');

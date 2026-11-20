@@ -1722,8 +1722,9 @@ export class EditorState {
     if (!Number.isSafeInteger(tabSize) || tabSize < 1) throw new Error('Invalid tab size');
     if (prefix !== undefined && !Number.isSafeInteger(prefix)) throw new Error('Invalid prefix');
     if (this.active && this.mark !== undefined && this.mark !== this.point) {
-      if (prefix !== undefined) throw new Error('Prefixed region comments are not supported');
-      this.commentRegion(commentStart, tabSize);
+      if (prefix !== undefined && ((prefix !== 1 && prefix !== 2) || rawUniversal))
+        throw new Error('This region comment prefix is not supported');
+      this.commentRegion(commentStart, tabSize, prefix);
       return false;
     }
     const [lineStart, lineEnd] = this.lineRange(this.point);
@@ -1841,7 +1842,7 @@ export class EditorState {
     this.done('comment');
     return false;
   }
-  private commentRegion(commentStart: string, tabSize: number): void {
+  private commentRegion(commentStart: string, tabSize: number, count?: number): void {
     const regionStart = Math.min(this.mark!, this.point);
     const regionEnd = Math.max(this.mark!, this.point);
     const reversed = this.point < this.mark!;
@@ -1876,8 +1877,19 @@ export class EditorState {
         const content = this.text.slice(shiftedStart, shiftedEnd);
         const leading = /^[ \t]*/.exec(content)![0].length;
         const tokenStart = shiftedStart + leading;
-        let removeEnd = tokenStart + commentStart.length;
-        if (this.text[removeEnd] === ' ') removeEnd++;
+        let delimiterEnd = tokenStart + commentStart.length;
+        while (delimiterEnd < shiftedEnd && this.text[delimiterEnd] === commentStart.slice(-1))
+          delimiterEnd++;
+        const extra = delimiterEnd - tokenStart - commentStart.length;
+        const removeCount =
+          count === undefined
+            ? commentStart.length
+            : count > extra
+              ? delimiterEnd - tokenStart
+              : count;
+        let removeEnd = tokenStart + removeCount;
+        if ((count === undefined || removeEnd === delimiterEnd) && this.text[removeEnd] === ' ')
+          removeEnd++;
         this.replace(tokenStart, removeEnd, '');
         delta -= removeEnd - tokenStart;
       }
@@ -1902,7 +1914,7 @@ export class EditorState {
           column += this.text[offset] === '\t' ? tabSize - (column % tabSize) : 1;
           offset++;
         }
-        const insertion = commentStart + ' ';
+        const insertion = commentStart + commentStart.slice(-1).repeat((count ?? 1) - 1) + ' ';
         this.replace(offset, offset, insertion);
         delta += insertion.length;
       }

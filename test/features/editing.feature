@@ -1522,11 +1522,39 @@ Feature: Emacs editing state
     And point is 0 and mark is 0
     And the region is active
 
+  @SC-comment-prefix-region-one
+  Scenario: A prefix of one comments a reversed CRLF region and preserves the mark
+    Given text "foo\r\nbar" at position 8
+    When I set the mark
+    And I move backward 7 character
+    And I comment with token "//" and prefix 1
+    Then the text is "// foo\r\n// bar"
+    And point is 0 and mark is 14
+    And the region is inactive
+
+  @SC-comment-prefix-region-two
+  Scenario: Prefix two adds an extra delimiter to each selected line
+    Given text "foo\r\nbar" at position 0
+    When I set the mark and move forward 7 characters
+    And I comment with token "//" and prefix 2
+    Then the text is "/// foo\r\n/// bar"
+    And point is 16 and mark is 0
+    And the region is inactive
+
+  @SC-comment-prefix-region-uncomment
+  Scenario: Prefix one removes one extra delimiter from commented lines
+    Given text "/// foo\n/// bar" at position 0
+    When I set the mark and move forward 15 characters
+    And I comment with token "//" and prefix 1
+    Then the text is "// foo\n// bar"
+    And point is 13 and mark is 0
+    And the region is inactive
+
   @SC-comment-prefix-region-safety
-  Scenario: A prefixed active region is rejected without modifying text or the mark
+  Scenario: An unsupported region prefix is rejected without modifying text or the mark
     Given text "foo\nbar" at position 0
     When I set the mark and move forward 3 characters
-    And I comment with token "//" and prefix 2
+    And I comment with token "//" and prefix 3
     Then an error is reported
     And the text is "foo\nbar"
     And point is 3 and mark is 0
