@@ -1443,6 +1443,64 @@ describe('emacscode editor behavior', function () {
       await vscode.env.clipboard.writeText(clipboard);
     }
   });
+  for (const mode of ['append', 'kill', 'queued append']) {
+    it(`Given ${mode} When switching editors and returning Then the next kill starts a new entry`, async function () {
+      const clipboard = await vscode.env.clipboard.readText();
+      const source = editor.document;
+      const other = await vscode.workspace.openTextDocument({
+        content: 'gamma delta',
+        language: 'plaintext',
+      });
+      try {
+        await vscode.commands.executeCommand('emacscode.killWord');
+        if (mode !== 'kill') {
+          await vscode.commands.executeCommand('emacscode.forwardChar');
+          if (mode === 'append') await vscode.commands.executeCommand('emacscode.appendNextKill');
+        }
+        const pending =
+          mode === 'queued append'
+            ? vscode.commands.executeCommand('emacscode.appendNextKill')
+            : Promise.resolve();
+        await vscode.window.showTextDocument(other, { preview: false });
+        await pending;
+        editor = await vscode.window.showTextDocument(source, { preview: false });
+        await vscode.commands.executeCommand('emacscode.killWord');
+        const killed = mode === 'kill' ? ' beta' : 'beta';
+        assert.equal(await vscode.env.clipboard.readText(), killed);
+        await vscode.commands.executeCommand('emacscode.yank');
+        await vscode.commands.executeCommand('emacscode.yankPop');
+        assert.equal(source.getText(), mode === 'kill' ? 'alpha' : ' alpha');
+      } finally {
+        await vscode.env.clipboard.writeText(clipboard);
+      }
+    });
+  }
+  it('Given a mark and prefix When switching editors Then the mark survives and a new prefix applies', async function () {
+    const source = editor.document;
+    editor = await vscode.window.showTextDocument(source, { preview: false });
+    await vscode.commands.executeCommand('emacscode.setMark');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    await vscode.commands.executeCommand('emacscode.digit3');
+    const other = await vscode.workspace.openTextDocument({
+      content: 'other',
+      language: 'plaintext',
+    });
+    await vscode.window.showTextDocument(other, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preview: false,
+    });
+    editor = await vscode.window.showTextDocument(source, {
+      viewColumn: vscode.ViewColumn.One,
+      preview: false,
+    });
+    await vscode.commands.executeCommand('emacscode.digit2');
+    await vscode.commands.executeCommand('emacscode.forwardChar');
+    assert.deepEqual(
+      [editor.selection.anchor.character, editor.selection.active.character],
+      [0, 3],
+    );
+    await vscode.commands.executeCommand('emacscode.cancel');
+  });
   it('Given a numeric prefix When killing a line Then it includes the newline and undo restores it', async function () {
     const document = await vscode.workspace.openTextDocument({
       content: 'alpha\nbeta',

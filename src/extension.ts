@@ -96,6 +96,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const registers = new Registers();
   let killedRectangle: string[] = [];
   let queue: Promise<void> = Promise.resolve();
+  let activeEditor = vscode.window.activeTextEditor;
   let recenterEditor: vscode.TextEditor | undefined;
   let recenterSelection: vscode.Selection | undefined;
   let recenterStep = 0;
@@ -1130,10 +1131,18 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor(() => {
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      const previousEditor = activeEditor;
+      activeEditor = editor;
       prefix.reset();
       recenterEditor = undefined;
       windowLineEditor = undefined;
+      if (previousEditor !== editor) {
+        queue = queue.then(() => {
+          if (previousEditor) states.get(previousEditor)?.breakCommandChain();
+          if (editor) states.get(editor)?.breakCommandChain();
+        });
+      }
       contextUpdate();
     }),
   );
